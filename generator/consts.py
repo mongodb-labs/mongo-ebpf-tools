@@ -9,12 +9,46 @@ ARG_NAME_KEY = "name"
 PROBE_HIT_KEY = "hits"
 ARG_STR_LEN_KEY = "length"
 ARG_STRUCT_FIELDS_KEY = "fields"
+MAX_STR_SZ_KEY = "max_str_sz"
+MAX_MAP_SZ_KEY = "max_map_sz"
+SAMPLES_PROPORTION_KEY = "samples_prop"
 
 # EBPF-C Code #
 
 HEADERS = """
 #include <linux/ptrace.h>
 #include <linux/sched.h>
+"""
+
+# Default long string map storage: this caps maximum string size at
+# ~ 134 MB (only one long string supported per probe).
+# Note that larger string sizes generate more instructions in the unrolled
+# long-string copying loop, which may result in maximum instruction size being exceeded, even though
+# there is enough space in the string map to store a string of that size.
+MAX_STR_SZ = 2097152
+MAX_MAP_SZ = 32#64
+
+LONG_STRING_BUF_NAME = "longstr_buf_{}"
+LONG_STRING_PRELUDE = """
+#define MAX_STR_SZ      {max_str_sz}
+#define MAX_MAP_SZ      {max_map_sz}
+
+#define MIN(i1, i2) (i1 <= i2 ? i1 : i2)
+
+struct str_chunk {{
+\tchar str[MAX_STR_SZ];
+}};
+
+BPF_ARRAY({longstr_buf_name}, struct str_chunk, MAX_MAP_SZ);
+"""
+
+LONG_STR_FN_NAME = "read_long_str"
+LONG_STR_FN_DECL = "static inline __attribute__((__always_inline__)) void " + LONG_STR_FN_NAME + "(char *str, int sz) {\n #UNROLLED_LOOP# }\n"
+LONG_STR_FN_CALL = """
+\tchar *{arg_name}_str = NULL;
+\tbpf_usdt_readarg({arg_num}, ctx, &out.{arg_name}_sz);
+\tbpf_usdt_readarg({arg_num_inc}, ctx, &{arg_name}_str);
+\tread_long_str({arg_name}_str, out.{arg_name}_sz);
 """
 
 BPF_OUT_NAME = "out"
@@ -25,24 +59,24 @@ BPF_PERF_OUTPUT_STRUCT_NAME = "{}_output"
 BPF_PERF_OUTPUT_MEMBER_ASSN = "\tout.{target} = {source_struct}.{source_struct_member};\n"
 BPF_PERF_SUBMIT_STMT = "\t{}.perf_submit(ctx, &out, sizeof(out));\n"
 
-BPF_PERF_OUTPUT_COMMON_MEMBER_DECLS ="""
-        char comm[TASK_COMM_LEN];
-        u32 pid;
-        u32 tid;
-        u64 ns;
+BPF_PERF_OUTPUT_BOILERPLATE_MEMBER_DECLS ="""
+\tchar comm[TASK_COMM_LEN];
+\tu32 pid;
+\tu32 tid;
+\tu64 ns;
 """
 
-BPF_PERF_OUTPUT_COMMON ="""
-        // get time
-        out.ns = bpf_ktime_get_ns();
-
-        // get pid & tid
-        u64 tid_pid = bpf_get_current_pid_tgid();
-        out.pid = (tid_pid >> 32);
-        out.tid = tid_pid;
-
-        // get comm
-        bpf_get_current_comm(&out.comm, sizeof(out.comm));
+BPF_PERF_OUTPUT_BOILERPLATE ="""
+\t// get time
+\tout.ns = bpf_ktime_get_ns();
+\t
+\t// get pid & tid
+\tu64 tid_pid = bpf_get_current_pid_tgid();
+\tout.pid = (tid_pid >> 32);
+\tout.tid = tid_pid;
+\t
+\t// get comm
+\tbpf_get_current_comm(&out.comm, sizeof(out.comm));
 """
 
 BPF_READ_ARG = "\tbpf_usdt_readarg({num}, ctx, &out.{output_member_name});\n"
@@ -72,6 +106,10 @@ int {}(struct pt_regs *ctx) {{
 \treturn 0;\n}}\n
 """
 
+RANDOM_SAMPLES_PRELUDE = """
+\tif (bpf_get_prandom_u32() >= {}) return 0;
+"""
+
 BASE_STRUCT_NAME = "{probe_name}_level_0_{index}_base"
 STRUCT_NAME = "{probe_name}_level_{depth}_{index}"
 STRUCT = """
@@ -89,10 +127,63 @@ INT_TYPE = "int"
 STRING_TYPE = "str"
 STRUCT_TYPE = "struct"
 POINTER_TYPE = 'ptr'
+LONG_STRING_TYPE = 'longstr'
+TYPES = [INT_TYPE, STRING_TYPE, STRUCT_TYPE, POINTER_TYPE, LONG_STRING_TYPE]
 
 TYPE_DECL = {
     INT_TYPE: "int {arg_name}",
     STRING_TYPE: "char {arg_name}[{length}]",
     STRUCT_TYPE: "struct " + STRUCT_NAME + " {arg_name}",
-    POINTER_TYPE: "void* {arg_name}"
+    POINTER_TYPE: "void* {arg_name}",
+    # only the size of a long string is stored in the output struct
+    # the string itself can be retrieved from string_chunks in the BPF_ARRAY
+    # longstr_buf
+    LONG_STRING_TYPE: "int {arg_name}_sz"
 }
+
+# Utility functions #
+
+LONGSTR_LOOP_INIT = """
+\tint count = 0;
+\tint step = MIN(MAX_STR_SZ, sz);
+\tint len = sz;
+\tstruct str_chunk* chunk;
+"""
+LONGSTR_LOOP_READ = """
+\tchunk = {longstr_buf_name}.lookup(&count);
+\tif (chunk == NULL) return;
+
+\tbpf_probe_read_str(&chunk->str, MAX_STR_SZ, str);
+
+\tif (len <= step) return;
+\tlen -= step;
+\tstr += step;
+"""
+LONGSTR_LOOP_STEP = """
+\tcount = {index};
+\tstep = MIN(MAX_STR_SZ, sz - len);
+"""
+
+def generate_longstr_prelude(probe, max_map_sz, max_str_sz):
+    longstr_buf_name = LONG_STRING_BUF_NAME.format(probe)
+    prelude = LONG_STRING_PRELUDE.format(max_str_sz = max_str_sz,
+                                         max_map_sz = max_map_sz,
+                                         longstr_buf_name = longstr_buf_name)
+    read_str = LONGSTR_LOOP_READ.format(longstr_buf_name = longstr_buf_name)
+
+    unrolled_loop = LONGSTR_LOOP_INIT + read_str
+    for index in range(0, MAX_MAP_SZ - 1):
+        unrolled_loop += LONGSTR_LOOP_STEP.format(index = index) + read_str
+
+    return prelude + LONG_STR_FN_DECL.replace("#UNROLLED_LOOP#", unrolled_loop)
+
+def declare_member(arg_type, arg_name, probe_name, depth, index, length):
+    assert arg_type in TYPE_DECL
+    return STRUCT_MEMBER.format(TYPE_DECL[arg_type].format(probe_name = probe_name,
+                                                           arg_name = arg_name,
+                                                           depth = depth,
+                                                           index = index,
+                                                           length = length))
+
+def reduce(fn, items):
+    return ''.join(map(fn, items))
