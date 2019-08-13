@@ -8,6 +8,8 @@ from probes import ProbeHit, ProbeHistory, TimeTable, USDTThread, USDTArg
 from threading import Lock
 from time import sleep
 from util import WorkerMaster, WorkerThread
+import bson.raw_bson as raw_bson
+from bsonjs import dumps
 
 ####################################################################################
 
@@ -22,9 +24,18 @@ class FindTimeTable(TimeTable):
         def process_callback(probe, hit):
             if __name__ == "__main__":
                 self.lk.acquire()
-                print("----", probe, "----")
-                print(hit.args["objdata_{}".format(probe)],
-                      hit.args["objdata_{}_sz".format(probe)])
+                #TODO: serialize BSON into a string
+                bson = hit.args["objdata_{}".format(probe)]
+                print("RIGHT HERE: ", bson)
+                bson_sz = hit.args["objdata_{}_sz".format(probe)]
+                # print(len(bson))
+                # print(bson_sz)
+                bson = bson[:bson_sz]
+                rbson = raw_bson.RawBSONDocument(bson)
+                # print("BSON: ", dumps(rbson.raw))
+                # print("----", probe, "----")
+                # print(hit.args["objdata_{}".format(probe)],
+                #       hit.args["objdata_{}_sz".format(probe)])
                 self.lk.release()
         return process_callback
 

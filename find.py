@@ -60,7 +60,7 @@ int findCmdToAgg(struct pt_regs *ctx) {
 
 struct beginQueryOpOut {
     char nss[50];
-    char bson[100];
+    unsigned char bson[100];
     unsigned int queryObjSz;
     long long nreturn;
     long long nskip;
@@ -195,8 +195,16 @@ def toAggHit(cpu, data, size):
 
 def beginQueryHit(cpu, data, size):
     event = ct.cast(data, ct.POINTER(BeginQuery)).contents
-    bson = bytes(event.bson)
+    print(event.bson)
+    print(event.queryObjSz)
+    print(ct.cast(event.bson, ct.POINTER(ct.c_byte)))
+    print(len(event.bson))
+    print(bytes(event.bson))
+    bson = bytes(ct.cast(event.bson, ct.POINTER(ct.c_byte)))
     bson = bson[:event.queryObjSz]
+    print(bson)
+    print(bson.hex())
+    assert False
     rbson = raw_bson.RawBSONDocument(bson)
     print("Namespace: ", str(event.nss, 'utf-8'))
     print(" had query ", dumps(rbson.raw))

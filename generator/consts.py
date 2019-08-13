@@ -25,7 +25,7 @@ HEADERS = """
 # Note that larger string sizes generate more instructions in the unrolled
 # long-string copying loop, which may result in maximum instruction size being exceeded, even though
 # there is enough space in the string map to store a string of that size.
-MAX_STR_SZ = 2097152
+MAX_STR_SZ = 512#2097152
 MAX_MAP_SZ = 32#64
 
 LONG_STRING_BUF_NAME = "longstr_buf_{}"
@@ -145,15 +145,14 @@ TYPE_DECL = {
 
 LONGSTR_LOOP_INIT = """
 \tint count = 0;
-\tint step = MIN(MAX_STR_SZ, sz);
+\tunsigned int step = MIN(MAX_STR_SZ, sz);
 \tint len = sz;
 \tstruct str_chunk* chunk;
 """
 LONGSTR_LOOP_READ = """
 \tchunk = {longstr_buf_name}.lookup(&count);
-\tif (chunk == NULL) return;
-
-\tbpf_probe_read_str(&chunk->str, MAX_STR_SZ, str);
+\tif (chunk == NULL || step < 0 || step > 256) return;
+\tbpf_probe_read(&chunk->str, step, str);
 
 \tif (len <= step) return;
 \tlen -= step;
@@ -172,8 +171,8 @@ def generate_longstr_prelude(probe, max_map_sz, max_str_sz):
     read_str = LONGSTR_LOOP_READ.format(longstr_buf_name = longstr_buf_name)
 
     unrolled_loop = LONGSTR_LOOP_INIT + read_str
-    for index in range(0, MAX_MAP_SZ - 1):
-        unrolled_loop += LONGSTR_LOOP_STEP.format(index = index) + read_str
+    # for index in range(0, MAX_MAP_SZ - 1):
+    #     unrolled_loop += LONGSTR_LOOP_STEP.format(index = index) + read_str
 
     return prelude + LONG_STR_FN_DECL.replace("#UNROLLED_LOOP#", unrolled_loop)
 

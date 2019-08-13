@@ -4,6 +4,7 @@ from generator.generator import Generator, Probe
 from generator.consts import *
 from bcc import BPF, USDT
 from util import WorkerThread, Counter, Timer
+import ctypes
 
 #####################################################################################
 
@@ -188,8 +189,11 @@ class USDTThread(WorkerThread):
         try:
             if sz == 0: # for some reason my test probes are not reporting real string sizes correctly
                 out = self._bpf[buf][c].str
+                assert False
             else:
                 while i < sz and c < MAX_MAP_SZ:
+                    print("LEN: ", len(self._bpf[buf][c].str))
+                    print("STR: ", self._bpf[buf])
                     out += self._bpf[buf][c].str
                     i += MAX_STR_SZ
                     c = c + 1
