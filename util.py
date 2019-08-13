@@ -12,6 +12,7 @@ class WorkerThread(Thread):
     def __init__(self, target, delay = 0):
         self.should_work = True
         self._do_work = target
+        target()
         self._delay = delay
         Thread.__init__(self, target=self._job)
 
@@ -21,6 +22,19 @@ class WorkerThread(Thread):
                 sleep(self._delay)
             self._do_work()
         exit(0)
+
+class WorkerMaster:
+    def __init__(self, workers):
+        self._workers = workers
+
+    def start_all(self):
+        for worker in self._workers:
+            worker.start()
+
+    def kill_all(self):
+        for worker in self._workers:
+            worker.should_work = False
+            worker.join()
 
 class Counter:
     """Tracks the proportion of values recieved for a property, like a pie chart."""
