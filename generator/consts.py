@@ -149,10 +149,14 @@ LONGSTR_LOOP_INIT = """
 \tint len = sz;
 \tstruct str_chunk* chunk;
 """
+
+# WARNING: may (theoretically) be able to cause a segfault
+# since this is technically reading more memory than it should
 LONGSTR_LOOP_READ = """
 \tchunk = {longstr_buf_name}.lookup(&count);
-\tif (chunk == NULL || step < 0 || step > 256) return;
-\tbpf_probe_read(&chunk->str, step, str);
+\tif (chunk == NULL) return;
+
+\tbpf_probe_read(&chunk->str, MAX_STR_SZ, str);
 
 \tif (len <= step) return;
 \tlen -= step;

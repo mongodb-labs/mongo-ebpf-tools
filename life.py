@@ -36,7 +36,7 @@ for l in range(1, MAX_MAP_SZ - 1):
 
     tt = ss_#PROBE#.lookup(&count);
     if (tt == NULL) return;
-    bpf_probe_read_str(&tt->s, MAX_STR_SZ, str);
+    bpf_probe_read(&tt->s, MAX_STR_SZ, str);
 
     if (len <= step) return;
     len -= step; 
