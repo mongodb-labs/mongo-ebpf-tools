@@ -73,6 +73,7 @@ class Commands:
             self.workerThread.should_work = False
             format_output(self._result_win, "Joining worker...\n")
             self.workerThread.join()
+            self.workerThread._bpf.cleanup()
             self._stdscr.erase()
 
     def pct(self, tokens):
@@ -340,13 +341,13 @@ def main(pid, probes, stdscr):
     event_win = TallTable(begin_x = left_w + 1,
                           begin_y = 1,
                           width = right_w,
-                          height = int(0.3*(H - 1)),
+                          height = int(0.35*(H - 1)),
                           titles = ["TIME", "PROBE", "COMM", "PID", "TID", "NS", "CPU"])
 
     pct_win = TallTable(begin_x = left_w + 1,
                         begin_y = event_win.begin_y + event_win.height + 1,
                         width = right_w,
-                        height = int(0.7*(H - 1)),
+                        height = int(0.65*(H - 1)),
                         titles = pct_cols)
 
     tt_view = EventView(event_win, pct_win)
@@ -367,6 +368,7 @@ def main(pid, probes, stdscr):
     finally:
         worker.should_work = False
         worker.join()
+        worker._bpf.cleanup()
         tb.commands.close()
 
 if __name__ == '__main__':

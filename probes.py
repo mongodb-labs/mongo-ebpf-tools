@@ -38,6 +38,7 @@ class ProbeHistory:
         self.hits_lookup = dict()
         self.counters = dict()
         self.timer = Timer()
+        self.lost = 0
 
     def append(self, hit):
         key = hit.tid
@@ -53,6 +54,9 @@ class ProbeHistory:
     def last_hit(self, key):
         return self.hits_lookup.get(key)
 
+    def add_lost(self, lost):
+        self.lost += lost
+
     def all_hits(self, key):
         all_hits = []
         last = self.last(key)
@@ -66,12 +70,14 @@ class ProbeHistory:
         for key in self.counters:
             counter = self.counters[key]
             out += "{}: {}".format(key, str(counter))
+        out += "lost: {}".format(self.lost)
         return out
 
 class TimeTable:
     def __init__(self, view):
         self.times = dict()
         self.on_add = self._callback_gen(view)
+        self.lost = 0
         self.last_probe = None
         # generate stats counters
         self.counters = dict();
@@ -104,6 +110,10 @@ class TimeTable:
         self.on_add(probe, hit)
         self.last_probe = probe
 
+    def add_lost(self, probe, lost):
+        self.times[probe].add_lost(lost)
+        self.lost += lost
+
     def has(self, probe):
         return probe in self.times
 
@@ -115,6 +125,7 @@ class TimeTable:
         for key in self.counters:
             counter = self.counters[key]
             out += "{}: {}".format(key, str(counter))
+        out += "lost: {}".format(self.lost)
         return out
 
 # USDT Thread #
@@ -134,6 +145,7 @@ class USDTThread(WorkerThread):
         self._pid = pid
         self._probes = [Probe(probe) for probe in probes]
         self._generator = Generator()
+        self._lost = dict()
         self.time_table = time_table
         self._init_bpf()
 
@@ -152,6 +164,11 @@ class USDTThread(WorkerThread):
             self.time_table.add(probe.name, hit)
         return process_callback
 
+    def _lost_callback_gen(self, probe):
+        def process_callback(lost):
+            self.time_table.add_lost(probe.name, lost)
+        return process_callback
+
     def gen_code(self):
         for probe in self._probes:
             self._generator.add_probe(probe)
@@ -168,4 +185,4 @@ class USDTThread(WorkerThread):
         # register callbacks on probe hits
         self._bpf = BPF(text=self.bpf_code, usdt_contexts=usdt_probes)
         for probe in self._probes:
-            self._bpf[probe.name].open_perf_buffer(self._callback_gen(probe))
+            self._bpf[probe.name].open_perf_buffer(self._callback_gen(probe), lost_cb=self._lost_callback_gen(probe))

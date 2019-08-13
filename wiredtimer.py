@@ -38,13 +38,16 @@ class WiredTimeTable(TimeTable):
             for k in self.timers:
                 for tid in self.timers[k]:
                     h = self.get(key+"_start").last_hit(tid)
-                    out += "{}[{}:{}]\n".format(k, h.comm if h != None else key, tid)
+                    if h == None:
+                        continue
+                    out += "{}[{}:{}]\n".format(k, h.comm, tid)
                     out += str(self.timers[k][tid]) + '\n'
                 if len(self.timers[k].values()) > 1:
                     timer = Timer.combine(self.timers[k].values())
                     out += "{} stats for all threads:\n".format(k) + str(timer) + '\n'
             if __name__ == '__main__':
                 print(out)
+                print(str(self))
             else:
                 view.erase()
                 view.add_line(out)

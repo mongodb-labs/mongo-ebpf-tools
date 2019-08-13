@@ -44,7 +44,10 @@ class Counter:
     def __str__(self):
         out = "[total {}]\n".format(str(self.total))
         for prop in self.props:
-            out += " - {}: {}%\n".format(prop, int(100*self.probability(prop)))
+            p = int(100*self.probability(prop))
+            if p > 0:
+                line = " - {}: {}%\n".format(prop, p)
+                out += line
         return out
 
 class Timer:
@@ -73,7 +76,7 @@ class Timer:
         elif v >= 1000:
             return "{}k{}".format(round(v/1000, 3), unit)
         else:
-            return "{}{}".format(v, unit)
+            return "{}{}".format(round(v, 3), unit)
 
     def combine(timers):
         tt = Timer()
