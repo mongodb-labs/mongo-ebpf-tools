@@ -148,6 +148,14 @@ class USDTThread(WorkerThread):
         self._lost = dict()
         self.time_table = time_table
         self._init_bpf()
+        # TODO: remove
+        print("DONE")
+        WorkerThread.__init__(self, target=self._work_gen())
+
+    def _work_gen(self):
+        def work():
+            self._bpf.perf_buffer_poll(100)
+        return work
 
     def _callback_gen(self, probe):
         def process_callback(cpu, data, size):
@@ -160,9 +168,33 @@ class USDTThread(WorkerThread):
                            cpu = cpu,
                            size = size)
             for arg in probe.args:
-                hit.args[arg.name] = getattr(event, arg.name)
+                # long str is a special case! must read from map
+                if arg.type == LONG_STRING_TYPE:
+                    sz_name = arg.name + "_sz"
+                    sz = getattr(event, sz_name)
+                    hit.args[arg.name] = getattr(event, arg.name)
+                    hit.args[arg.name] = self.read_long_str(sz, probe)
+                else:
+                    hit.args[arg.name] = getattr(event, arg.name)
             self.time_table.add(probe.name, hit)
         return process_callback
+
+    def read_long_str(self, sz, probe):
+        buf = LONG_STRING_BUF_NAME.format(probe.name)
+        out = bytes()
+        i = 0
+        c = 0
+        try:
+            if sz == 0: # for some reason my test probes are not reporting real string sizes correctly
+                out = self._bpf[buf][c].str
+            else:
+                while i < sz and c < MAX_MAP_SZ:
+                    out += self._bpf[buf][c].str
+                    i += MAX_STR_SZ
+                    c = c + 1
+        except Exception as e:
+            out += bytes("#ERR#" + str(e))
+        return out
 
     def _lost_callback_gen(self, probe):
         def process_callback(lost):
