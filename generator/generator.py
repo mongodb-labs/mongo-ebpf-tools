@@ -43,7 +43,7 @@ class Probe:
         self.random_samples_enabled = False
         if SAMPLES_PROPORTION_KEY in probe_dict and probe_dict[SAMPLES_PROPORTION_KEY] < 1:
             self.random_samples_enabled = True
-            self.samples_threshold = (probe_dict[SAMPLES_PROPORTION_KEY] * (2**32))
+            self.samples_threshold = int(probe_dict[SAMPLES_PROPORTION_KEY] * (2**32))
 
     def before_output_gen(self):
         out = generate_longstr_prelude(self.name, self.max_map_sz, self.max_str_sz) if self.has_long_str else ""
@@ -56,7 +56,7 @@ class Probe:
         return c_prog
 
     def entry_fn_gen(self):
-        fn_content = RANDOM_SAMPLES_PRELUDE.format(samples_threshold) if self.random_samples_enabled else ""
+        fn_content = RANDOM_SAMPLES_PRELUDE.format(self.samples_threshold) if self.random_samples_enabled else ""
         fn_content += STRUCT_INIT.format(self.output_struct_name, BPF_OUT_NAME)
         fn_content += BPF_PERF_OUTPUT_BOILERPLATE
         fn_content += reduce(Arg.fill_output_struct, self.args)

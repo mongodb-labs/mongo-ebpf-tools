@@ -5,9 +5,9 @@ import argparse
 from generator.consts import *
 from generator.generator import Probe
 from probes import ProbeHit, ProbeHistory, TimeTable, USDTThread, USDTArg
-from threading import Lock
-from time import sleep
-from util import WorkerMaster, WorkerThread, Timer, Timer2
+from signal import signal, SIGINT
+from threading import Event, Lock
+from util import WorkerMaster, WorkerThread
 
 ####################################################################################
 
@@ -23,12 +23,18 @@ class QueryTimeTable(TimeTable):
             if __name__ == "__main__":
                 self.lk.acquire()
                 print("----", probe, "----")
-                print(hit.get_field("objdata_{}".format(probe)),
-                      hit.get_field("objdata_{}_sz".format(probe)))
+                print(hit.args["objdata_{}".format(probe)],
+                      hit.args["objdata_{}_sz".format(probe)])
                 self.lk.release()
         return process_callback
 
 ####################################################################################
+
+def sigint_handler_gen(mr):
+    def handler(signal, frame):
+        mr.kill_all()
+        exit(0)
+    return handler
 
 # Main #
 
@@ -43,24 +49,19 @@ if __name__ == '__main__':
     print(args)
 
     mr = None
-    try:
-        time_table = QueryTimeTable(None)
+    time_table = QueryTimeTable(None)
 
-        workers = []
-        for probe_name in ["query", "query1", "query1R", "queryR", "query2", "query3"]:
-            probe = {PROBE_NAME_KEY: probe_name,
-                     PROBE_ARGS_KEY: [{ARG_TYPE_KEY: LONG_STRING_TYPE,
-                                       ARG_NAME_KEY: "objdata_{}".format(probe_name)}]}
-            worker = USDTThread(args.pid[0], [probe], time_table)
-            workers.append(worker)
+    workers = []
+    for probe_name in ["query", "query1", "query1R", "queryR", "query2", "query3"]:
+        probe = {PROBE_NAME_KEY: probe_name,
+                 SAMPLES_PROPORTION_KEY: 0.0001,
+                 PROBE_ARGS_KEY: [{ARG_TYPE_KEY: LONG_STRING_TYPE,
+                                   ARG_NAME_KEY: "objdata_{}".format(probe_name)}]}
+        worker = USDTThread(args.pid[0], [probe], time_table)
+        workers.append(worker)
 
-        mr = WorkerMaster(workers)
-        mr.start_all()
-        
-        # loop until keyboard interrupt
-        while True:
-            pass
+    mr = WorkerMaster(workers)
+    mr.start_all()
 
-    except KeyboardInterrupt:
-        if mr:
-            mr.kill_all()
+    signal(SIGINT, sigint_handler_gen(mr))
+    Event().wait() # wait for keyboard interrupt forever
