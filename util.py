@@ -12,7 +12,6 @@ class WorkerThread(Thread):
     def __init__(self, target, delay = 0):
         self.should_work = True
         self._do_work = target
-        target()
         self._delay = delay
         Thread.__init__(self, target=self._job)
 

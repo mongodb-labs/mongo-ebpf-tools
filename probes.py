@@ -1,6 +1,7 @@
 #!/bin/python3
 
 from generator.generator import Generator, Probe
+from generator.consts import *
 from bcc import BPF, USDT
 from util import WorkerThread, Counter, Timer
 
@@ -172,7 +173,7 @@ class USDTThread(WorkerThread):
                 if arg.type == LONG_STRING_TYPE:
                     sz_name = arg.name + "_sz"
                     sz = getattr(event, sz_name)
-                    hit.args[arg.name] = getattr(event, arg.name)
+                    hit.args[sz_name] = sz
                     hit.args[arg.name] = self.read_long_str(sz, probe)
                 else:
                     hit.args[arg.name] = getattr(event, arg.name)
@@ -193,7 +194,8 @@ class USDTThread(WorkerThread):
                     i += MAX_STR_SZ
                     c = c + 1
         except Exception as e:
-            out += bytes("#ERR#" + str(e))
+            print(e)
+            out += bytes("#ERR#" + str(e), 'utf-8')
         return out
 
     def _lost_callback_gen(self, probe):
@@ -205,6 +207,7 @@ class USDTThread(WorkerThread):
         for probe in self._probes:
             self._generator.add_probe(probe)
         self.bpf_code = self._generator.finish()
+        print(self.bpf_code)
 
     def _init_bpf(self):
         self.gen_code()
