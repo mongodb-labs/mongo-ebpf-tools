@@ -36,6 +36,7 @@ LONG_STRING_PRELUDE = """
 #define BAD_CHUNK_IDX   -1
 #define BAD_READ_PROBE  -2
 #define KERNEL_FAULT    -3
+#define LOGICAL_ERROR   -5
 
 #define MIN(i1, i2) (i1 <= i2 ? i1 : i2)
 
@@ -129,14 +130,16 @@ ARG_NAME_CAT = "_{}"
 # EBPF-C Types & Declarations #
 
 INT_TYPE = "int"
+LONG_LONG_TYPE = "long long"
 STRING_TYPE = "str"
 STRUCT_TYPE = "struct"
 POINTER_TYPE = 'ptr'
 LONG_STRING_TYPE = 'longstr'
-TYPES = [INT_TYPE, STRING_TYPE, STRUCT_TYPE, POINTER_TYPE, LONG_STRING_TYPE]
+TYPES = [INT_TYPE, LONG_LONG_TYPE, STRING_TYPE, STRUCT_TYPE, POINTER_TYPE, LONG_STRING_TYPE]
 
 TYPE_DECL = {
     INT_TYPE: "int {arg_name}",
+    LONG_LONG_TYPE: "long long {arg_name}",
     STRING_TYPE: "char {arg_name}[{length}]",
     STRUCT_TYPE: "struct " + STRUCT_NAME + " {arg_name}",
     POINTER_TYPE: "void* {arg_name}",
@@ -160,16 +163,26 @@ LONGSTR_LOOP_INIT = """
 LONGSTR_LOOP_READ = """
 \tchunk = {longstr_buf_name}.lookup(&count);
 \tif (chunk == NULL) return BAD_CHUNK_IDX;
-
-\tif (bpf_probe_read(&chunk->str, MAX_STR_SZ, str)) return KERNEL_FAULT;
-
+{{
+\tunsigned to_read = MIN(MAX_STR_SZ, step);
+\tif(to_read < MAX_STR_SZ) {{
+\t\tif (bpf_probe_read(&chunk->str, to_read, str)) return KERNEL_FAULT;
+\t}} else {{
+\t\tif (bpf_probe_read(&chunk->str, MAX_STR_SZ, str)) return KERNEL_FAULT;
+\t}}
+}}
 \tif (len <= step) return sz;
 \tlen -= step;
 \tstr += step;
 """
 LONGSTR_LOOP_STEP = """
 \tcount = {index};
-\tstep = MIN(MAX_STR_SZ, sz - len);
+\tif((sz - len) <= 0)
+\treturn LOGICAL_ERROR;
+\tif((sz - len) < MAX_STR_SZ && (sz - len) > 0)
+\t\tstep = sz - len;
+\telse
+\t\tstep = MAX_STR_SZ;
 """
 LONGSTR_LOOP_END = "\n\treturn sz;\n"
 
