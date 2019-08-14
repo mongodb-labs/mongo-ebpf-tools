@@ -177,9 +177,15 @@ class USDTThread(WorkerThread):
                 if arg.type == LONG_STRING_TYPE:
                     sz_name = arg.name + "_sz"
                     sz = getattr(event, sz_name)
-                    print("gottem", sz)
-                    hit.args[sz_name] = sz
-                    hit.args[arg.name] = self.read_long_str(sz, probe)
+                    if sz < 0: # ERROR
+                        print("ERROR:", sz)
+                        hit.args[arg.name + "_err"] = sz
+                    else:
+                        try:
+                            hit.args[sz_name] = sz
+                            hit.args[arg.name] = self.read_long_str(sz, probe)
+                        except KeyError:
+                            hit.args[arg.name + "_err"] = -4
                 else:
                     hit.args[arg.name] = getattr(event, arg.name)
             self.time_table.add(probe.name, hit)
