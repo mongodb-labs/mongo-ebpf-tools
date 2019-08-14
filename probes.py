@@ -196,8 +196,8 @@ class USDTThread(WorkerThread):
         i = 0
         sz_remaining = sz
         out = []
-        while i < MAX_MAP_SZ and sz_remaining > 0:
-            chunk_sz = min(sz_remaining, MAX_STR_SZ)
+        while i < probe.max_map_sz and sz_remaining > 0:
+            chunk_sz = min(sz_remaining, probe.max_str_sz)
             out += self._bpf[buf][i].str[:chunk_sz]
             sz_remaining -= chunk_sz
             i = i + 1

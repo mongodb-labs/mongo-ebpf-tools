@@ -116,7 +116,7 @@ if __name__ == '__main__':
     time_table = QueryTimeTable(None)
 
     workers = []
-    for probe_name in ["query", "queryR", "query2"]:#["query", "query1", "query1R", "queryR", "query2", "query3"]:
+    for probe_name in ["query"]:#, "queryR", "query2"]:#["query", "query1", "query1R", "queryR", "query2", "query3"]:
         probe = {PROBE_NAME_KEY: probe_name,
                  SAMPLES_PROPORTION_KEY: args.sample,
                  MAX_STR_SZ_KEY: args.chunk,
