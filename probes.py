@@ -146,7 +146,7 @@ class USDTArg:
 
 class USDTThread(WorkerThread):
     def __init__(self, pid, probes, time_table):
-        WorkerThread.__init__(self, target=lambda: self._bpf.perf_buffer_poll(100))
+        WorkerThread.__init__(self, target=lambda: self._bpf.perf_buffer_poll(100), on_die=lambda: self._bpf.cleanup())
         self._pid = pid
         self._probes = [Probe(probe) for probe in probes]
         self._generator = Generator()
@@ -177,6 +177,7 @@ class USDTThread(WorkerThread):
                 if arg.type == LONG_STRING_TYPE:
                     sz_name = arg.name + "_sz"
                     sz = getattr(event, sz_name)
+                    print("gottem", sz)
                     hit.args[sz_name] = sz
                     hit.args[arg.name] = self.read_long_str(sz, probe)
                 else:
@@ -186,25 +187,14 @@ class USDTThread(WorkerThread):
 
     def read_long_str(self, sz, probe):
         buf = LONG_STRING_BUF_NAME.format(probe.name)
-        for i in range(0, sz):
-            print(hex(self._bpf[buf][0].str[i]))
-        return self._bpf[buf][0].str
-#        i = 0
-#        c = 0
-#        try:
-#            if sz == 0: # for some reason my test probes are not reporting real string sizes correctly
-#                #out = ct.cast(self._bpf[buf][c].str, ct.POINTER(ct.c_ubyte * MAX_STR_SZ)).contents
-#                pass
-#            else:
-#                while i < sz and c < MAX_MAP_SZ:
-#                    out += ct.cast(self._bpf[buf][c].str, ct.POINTER(ct.c_byte * min(sz, MAX_STR_SZ))).contents
-#                    #   out += ct.cast(self._bpf[buf][c].str, ct.POINTER(ct.c_ubyte * min(sz, MAX_STR_SZ))).contents
-#                    i += MAX_STR_SZ
-#                    c = c + 1
-#                    print("idx", i)
-#        except Exception as e:
-#            print(e)
-#            out += bytes("#ERR#" + str(e), 'utf-8')
+        i = 0
+        sz_remaining = sz
+        out = []
+        while i < MAX_MAP_SZ and sz_remaining > 0:
+            chunk_sz = min(sz_remaining, MAX_STR_SZ)
+            out += self._bpf[buf][i].str[:chunk_sz]
+            sz_remaining -= chunk_sz
+            i = i + 1
         return bytes(out)
 
     def _lost_callback_gen(self, probe):

@@ -9,10 +9,11 @@ from time import sleep
 # Utilities #
 
 class WorkerThread(Thread):
-    def __init__(self, target, delay = 0):
+    def __init__(self, target, delay = 0, on_die = None):
         self.should_work = True
         self._do_work = target
         self._delay = delay
+        self.on_die = on_die
         Thread.__init__(self, target=self._job)
 
     def _job(self):
@@ -20,6 +21,7 @@ class WorkerThread(Thread):
             if self._delay > 0:
                 sleep(self._delay)
             self._do_work()
+        if self.on_die: self.on_die()
         exit(0)
 
 class WorkerMaster:

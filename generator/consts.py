@@ -21,12 +21,12 @@ HEADERS = """
 """
 
 # Default long string map storage: this caps maximum string size at
-# ~ 134 MB (only one long string supported per probe).
+# ~ 67 MB (only one long string supported per probe).
 # Note that larger string sizes generate more instructions in the unrolled
 # long-string copying loop, which may result in maximum instruction size being exceeded, even though
 # there is enough space in the string map to store a string of that size.
-MAX_STR_SZ = 512#2097152
-MAX_MAP_SZ = 32#64
+MAX_STR_SZ = 1048576#2097152 #works but seems unreliable
+MAX_MAP_SZ = 32
 
 LONG_STRING_BUF_NAME = "longstr_buf_{}"
 LONG_STRING_PRELUDE = """
@@ -43,12 +43,12 @@ BPF_ARRAY({longstr_buf_name}, struct str_chunk, MAX_MAP_SZ);
 """
 
 LONG_STR_FN_NAME = "read_long_str"
-LONG_STR_FN_DECL = "static inline __attribute__((__always_inline__)) int " + LONG_STR_FN_NAME + "(char *str, int sz) {\n #UNROLLED_LOOP# }\n"
+LONG_STR_FN_DECL = "static inline __attribute__((__always_inline__)) void " + LONG_STR_FN_NAME + "(char *str, int sz) {\n #UNROLLED_LOOP# }\n"
 LONG_STR_FN_CALL = """
 \tchar *{arg_name}_str = NULL;
 \tbpf_usdt_readarg({arg_num}, ctx, &out.{arg_name}_sz);
 \tbpf_usdt_readarg({arg_num_inc}, ctx, &{arg_name}_str);
-\tout.{arg_name}_sz = read_long_str({arg_name}_str, out.{arg_name}_sz);
+\tread_long_str({arg_name}_str, out.{arg_name}_sz);
 """
 
 BPF_OUT_NAME = "out"
@@ -147,7 +147,6 @@ LONGSTR_LOOP_INIT = """
 \tint count = 0;
 \tunsigned int step = MIN(MAX_STR_SZ, sz);
 \tint len = sz;
-\tint boi = -666;
 \tstruct str_chunk* chunk;
 """
 
@@ -155,11 +154,11 @@ LONGSTR_LOOP_INIT = """
 # since this is technically reading more memory than it should
 LONGSTR_LOOP_READ = """
 \tchunk = {longstr_buf_name}.lookup(&count);
-\tif (chunk == NULL) return -1;
+\tif (chunk == NULL) return;
 
-\tboi = bpf_probe_read(&chunk->str, MAX_STR_SZ, str);
+\tbpf_probe_read(&chunk->str, MAX_STR_SZ, str);
 
-\tif (len <= step) return sz;
+\tif (len <= step) return;
 \tlen -= step;
 \tstr += step;
 """
@@ -176,8 +175,8 @@ def generate_longstr_prelude(probe, max_map_sz, max_str_sz):
     read_str = LONGSTR_LOOP_READ.format(longstr_buf_name = longstr_buf_name)
 
     unrolled_loop = LONGSTR_LOOP_INIT + read_str
-    # for index in range(0, MAX_MAP_SZ - 1):
-    #     unrolled_loop += LONGSTR_LOOP_STEP.format(index = index) + read_str
+    for index in range(1, MAX_MAP_SZ - 1):
+         unrolled_loop += LONGSTR_LOOP_STEP.format(index = index) + read_str
 
     return prelude + LONG_STR_FN_DECL.replace("#UNROLLED_LOOP#", unrolled_loop)
 

@@ -73,7 +73,6 @@ class Commands:
             self.workerThread.should_work = False
             format_output(self._result_win, "Joining worker...\n")
             self.workerThread.join()
-            self.workerThread._bpf.cleanup()
             self._stdscr.erase()
 
     def pct(self, tokens):
@@ -368,7 +367,6 @@ def main(pid, probes, stdscr):
     finally:
         worker.should_work = False
         worker.join()
-        worker._bpf.cleanup()
         tb.commands.close()
 
 if __name__ == '__main__':

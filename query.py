@@ -27,11 +27,15 @@ class QueryTimeTable(TimeTable):
                 print("----", probe, "----")
                 bson = hit.args["objdata_{}".format(probe)]
                 sz = hit.args["objdata_{}_sz".format(probe)]
-                #print(bson[:sz].hex(), sz)
-                #print(bson[:sz], sz)
-                bson = bytes(bson[:sz])
-                rbson = raw_bson.RawBSONDocument(bson)
-                print(dumps(rbson.raw))
+                print("printing", sz)
+                try:
+                    rbson = raw_bson.RawBSONDocument(bson)
+                    print(dumps(rbson.raw))
+                except:
+                    out = ""
+                    for b in bson:
+                        out += str(hex(b))
+                    print(out)
 
                 self.lk.release()
         return process_callback
@@ -60,7 +64,7 @@ if __name__ == '__main__':
     time_table = QueryTimeTable(None)
 
     workers = []
-    for probe_name in ["query"]:#, "queryR", "query2"]:#["query", "query1", "query1R", "queryR", "query2", "query3"]:
+    for probe_name in ["query", "queryR", "query2"]:#["query", "query1", "query1R", "queryR", "query2", "query3"]:
         probe = {PROBE_NAME_KEY: probe_name,
                  #SAMPLES_PROPORTION_KEY: 0.001,
                  PROBE_ARGS_KEY: [{ARG_TYPE_KEY: LONG_STRING_TYPE,
