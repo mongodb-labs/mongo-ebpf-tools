@@ -186,10 +186,22 @@ class USDTThread(WorkerThread):
                             hit.args[arg.name] = self.read_long_str(sz, probe)
                         except KeyError:
                             hit.args[arg.name + "_err"] = -4
+                elif arg.type == STRUCT_TYPE:
+                    hit.args[arg.name] = USDTThread.attach_args_for_struct(event, hit, arg.fields)
                 else:
                     hit.args[arg.name] = getattr(event, arg.name)
             self.time_table.add(probe.name, hit)
         return process_callback
+
+    def attach_args_for_struct(event, hit, args, level=1):
+        result = dict()
+        for arg in args:
+            if arg.type == STRUCT_TYPE:
+                result[arg.name] = attach_args_for_struct(event, hit, arg.fields, level + 1)
+            else:
+                # TODO: refactor out the LONG_STRING_TYPE
+                result[arg.name] = getattr(event, arg.name + '_' + str(level))
+        return result
 
     def read_long_str(self, sz, probe):
         buf = LONG_STRING_BUF_NAME.format(probe.name)
