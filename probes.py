@@ -7,6 +7,7 @@ from generator.consts import *
 from bcc import BPF, USDT
 from util import WorkerThread, Counter, Timer
 import ctypes
+from time import sleep
 
 #####################################################################################
 
@@ -185,26 +186,26 @@ class USDTThread(WorkerThread):
 
     def read_long_str(self, sz, probe):
         buf = LONG_STRING_BUF_NAME.format(probe.name)
-        base_str = self._bpf[buf][0].str
-        casted = ct.cast(base_str, ct.POINTER(ct.c_byte * sz)).contents
-        res = bytes(casted) 
-        return res
-#        out = bytes()
+        for i in range(0, sz):
+            print(hex(self._bpf[buf][0].str[i]))
+        return self._bpf[buf][0].str
 #        i = 0
 #        c = 0
 #        try:
 #            if sz == 0: # for some reason my test probes are not reporting real string sizes correctly
-#                out = self._bpf[buf][c].str
+#                #out = ct.cast(self._bpf[buf][c].str, ct.POINTER(ct.c_ubyte * MAX_STR_SZ)).contents
+#                pass
 #            else:
 #                while i < sz and c < MAX_MAP_SZ:
-#                    out += self._bpf[buf][c].str
+#                    out += ct.cast(self._bpf[buf][c].str, ct.POINTER(ct.c_byte * min(sz, MAX_STR_SZ))).contents
+#                    #   out += ct.cast(self._bpf[buf][c].str, ct.POINTER(ct.c_ubyte * min(sz, MAX_STR_SZ))).contents
 #                    i += MAX_STR_SZ
 #                    c = c + 1
 #                    print("idx", i)
 #        except Exception as e:
 #            print(e)
 #            out += bytes("#ERR#" + str(e), 'utf-8')
-#        return out
+        return bytes(out)
 
     def _lost_callback_gen(self, probe):
         def process_callback(lost):

@@ -36,19 +36,19 @@ LONG_STRING_PRELUDE = """
 #define MIN(i1, i2) (i1 <= i2 ? i1 : i2)
 
 struct str_chunk {{
-\tchar str[MAX_STR_SZ];
+\tunsigned char str[MAX_STR_SZ];
 }};
 
 BPF_ARRAY({longstr_buf_name}, struct str_chunk, MAX_MAP_SZ);
 """
 
 LONG_STR_FN_NAME = "read_long_str"
-LONG_STR_FN_DECL = "static inline __attribute__((__always_inline__)) void " + LONG_STR_FN_NAME + "(char *str, int sz) {\n #UNROLLED_LOOP# }\n"
+LONG_STR_FN_DECL = "static inline __attribute__((__always_inline__)) int " + LONG_STR_FN_NAME + "(char *str, int sz) {\n #UNROLLED_LOOP# }\n"
 LONG_STR_FN_CALL = """
 \tchar *{arg_name}_str = NULL;
 \tbpf_usdt_readarg({arg_num}, ctx, &out.{arg_name}_sz);
 \tbpf_usdt_readarg({arg_num_inc}, ctx, &{arg_name}_str);
-\tread_long_str({arg_name}_str, out.{arg_name}_sz);
+\tout.{arg_name}_sz = read_long_str({arg_name}_str, out.{arg_name}_sz);
 """
 
 BPF_OUT_NAME = "out"
@@ -147,6 +147,7 @@ LONGSTR_LOOP_INIT = """
 \tint count = 0;
 \tunsigned int step = MIN(MAX_STR_SZ, sz);
 \tint len = sz;
+\tint boi = -666;
 \tstruct str_chunk* chunk;
 """
 
@@ -154,11 +155,11 @@ LONGSTR_LOOP_INIT = """
 # since this is technically reading more memory than it should
 LONGSTR_LOOP_READ = """
 \tchunk = {longstr_buf_name}.lookup(&count);
-\tif (chunk == NULL) return;
+\tif (chunk == NULL) return -1;
 
-\tbpf_probe_read(&chunk->str, MAX_STR_SZ, str);
+\tboi = bpf_probe_read(&chunk->str, MAX_STR_SZ, str);
 
-\tif (len <= step) return;
+\tif (len <= step) return sz;
 \tlen -= step;
 \tstr += step;
 """
