@@ -133,16 +133,21 @@ ARG_NAME_CAT = "_{}"
 # EBPF-C Types & Declarations #
 
 INT_TYPE = "int"
+UNSIGNED_LONG_TYPE = "unsigned long"
 LONG_LONG_TYPE = "long long"
+CHAR_TYPE = 'char' # useful for bools since C doesn't have those
 STRING_TYPE = "str"
 STRUCT_TYPE = "struct"
 POINTER_TYPE = 'ptr'
 LONG_STRING_TYPE = 'longstr'
-TYPES = [INT_TYPE, LONG_LONG_TYPE, STRING_TYPE, STRUCT_TYPE, POINTER_TYPE, LONG_STRING_TYPE]
+TYPES = [INT_TYPE, UNSIGNED_LONG_TYPE, LONG_LONG_TYPE, CHAR_TYPE, STRING_TYPE, STRUCT_TYPE, \
+        POINTER_TYPE, LONG_STRING_TYPE]
 
 TYPE_DECL = {
     INT_TYPE: "int {arg_name}",
+    UNSIGNED_LONG_TYPE: 'unsigned long {arg_name}',
     LONG_LONG_TYPE: "long long {arg_name}",
+    CHAR_TYPE: 'char {arg_name}',
     STRING_TYPE: "char {arg_name}[{length}]",
     STRUCT_TYPE: "struct " + STRUCT_NAME + " {arg_name}",
     POINTER_TYPE: "void* {arg_name}",
