@@ -4,7 +4,6 @@ import argparse
 import bson.raw_bson as raw_bson
 
 from bsonjs import dumps
-from generator.err import errors
 from generator.consts import *
 from generator.generator import Probe
 from probes import ProbeHit, ProbeHistory, TimeTable, USDTThread, USDTArg
@@ -14,7 +13,7 @@ from util import WorkerMaster, WorkerThread
 
 ####################################################################################
 
-class QueryTimeTable(TimeTable):
+class BSONTimeTable(TimeTable):
     def __init__(self, view):
         TimeTable.__init__(self, view)
         self.on_add = self._callback_gen(view)
@@ -37,9 +36,9 @@ class QueryTimeTable(TimeTable):
                 if errname in hit.args:
                     err = hit.args[errname]
                     print("ERROR", err)
-                    if err == errors["KERNEL_FAULT"]:
+                    if err == -3:
                         self.kernel_faults = self.kernel_faults + 1
-                    elif err == errors["KEY_ERROR"]:
+                    elif err == -4:
                         self.key_errs = self.key_errs + 1
                     else:
                         self.others = self.others + 1
@@ -114,10 +113,10 @@ if __name__ == '__main__':
     print(args)
 
     mr = None
-    time_table = QueryTimeTable(None)
+    time_table = BSONTimeTable(None)
 
     workers = []
-    for probe_name in ["query"]:#, "queryR", "query2"]:#["query", "query1", "query1R", "queryR", "query2", "query3"]:
+    for probe_name in ["updateQuery", "projQuery"]:
         probe = {PROBE_NAME_KEY: probe_name,
                  SAMPLES_PROPORTION_KEY: args.sample,
                  MAX_STR_SZ_KEY: args.chunk,

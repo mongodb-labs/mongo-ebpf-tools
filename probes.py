@@ -4,6 +4,7 @@ import ctypes as ct
 
 from generator.generator import Generator, Probe
 from generator.consts import *
+from generator.err import *
 from bcc import BPF, USDT
 from util import WorkerThread, Counter, Timer
 import ctypes
@@ -178,14 +179,14 @@ class USDTThread(WorkerThread):
                     sz_name = arg.name + "_sz"
                     sz = getattr(event, sz_name)
                     if sz < 0: # ERROR
-                        print("ERROR:", sz)
+                        print(error_strings[sz])
                         hit.args[arg.name + "_err"] = sz
                     else:
                         try:
                             hit.args[sz_name] = sz
                             hit.args[arg.name] = self.read_long_str(sz, probe)
                         except KeyError:
-                            hit.args[arg.name + "_err"] = -4
+                            hit.args[arg.name + "_err"] = errors["KEY_ERROR"]
                 elif arg.type == STRUCT_TYPE:
                     hit.args[arg.name] = USDTThread.attach_args_for_struct(event, hit, arg.fields)
                 else:

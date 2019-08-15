@@ -1,5 +1,7 @@
 """ Constants & utilities to be used across USDT test runner and generator """
 
+from .err import errors
+
 # Keys #
 
 PROBE_NAME_KEY = "name"
@@ -25,7 +27,7 @@ HEADERS = """
 # NOTE that larger string sizes generate more instructions in the unrolled
 # long-string copying loop, which may result in maximum instruction size being exceeded, even though
 # there is enough space in the string map to store a string of that size.
-MAX_STR_SZ = 2097152 #works but seems unreliable
+MAX_STR_SZ = 1048576
 MAX_MAP_SZ = 64
 
 LONG_STRING_BUF_NAME = "longstr_buf_{}"
@@ -33,12 +35,13 @@ LONG_STRING_PRELUDE = """
 #define MAX_STR_SZ      {max_str_sz}
 #define MAX_MAP_SZ      {max_map_sz}
 
-#define BAD_CHUNK_IDX   -1
-#define BAD_READ_PROBE  -2
-#define KERNEL_FAULT    -3
-#define LOGICAL_ERROR   -5
+#define BAD_CHUNK_IDX   """ + str(errors["BAD_CHUNK_IDX"]) + """
+#define BAD_READ_PROBE  """ + str(errors["BAD_READ_PROBE"]) + """
+#define KERNEL_FAULT    """ + str(errors["KERNEL_FAULT"]) + """
+#define LOGICAL_ERROR   """ + str(errors["LOGICAL_ERROR"]) + """
 
 #define MIN(i1, i2) (i1 <= i2 ? i1 : i2)
+#define MAX(i1, i2) (i1 >= i2 ? i1 : i2)
 
 struct str_chunk {{
 \tunsigned char str[MAX_STR_SZ];
@@ -152,9 +155,8 @@ TYPE_DECL = {
 # Utility functions #
 
 LONGSTR_LOOP_INIT = """
-\tint count = 0;
-\tunsigned int step = MIN(MAX_STR_SZ, sz);
-\tint len = sz;
+\tunsigned int count = 0;
+\tunsigned int len = sz;
 \tstruct str_chunk* chunk;
 """
 
@@ -162,27 +164,19 @@ LONGSTR_LOOP_INIT = """
 # since this is technically reading more memory than it should
 LONGSTR_LOOP_READ = """
 \tchunk = {longstr_buf_name}.lookup(&count);
+
 \tif (chunk == NULL) return BAD_CHUNK_IDX;
-{{
-\tunsigned to_read = MIN(MAX_STR_SZ, step);
-\tif(to_read < MAX_STR_SZ) {{
-\t\tif (bpf_probe_read(&chunk->str, to_read, str)) return KERNEL_FAULT;
-\t}} else {{
-\t\tif (bpf_probe_read(&chunk->str, MAX_STR_SZ, str)) return KERNEL_FAULT;
-\t}}
-}}
-\tif (len <= step) return sz;
-\tlen -= step;
-\tstr += step;
+
+\tif (len < 0) {{
+\t\treturn LOGICAL_ERROR;
+\t}} if (len < MAX_STR_SZ) {{
+\t\treturn bpf_probe_read(&chunk->str, len, str) ? KERNEL_FAULT : sz;
+\t}} else if (bpf_probe_read(&chunk->str, MAX_STR_SZ, str)) return KERNEL_FAULT;
 """
-LONGSTR_LOOP_STEP = """
-\tcount = {index};
-\tif((sz - len) <= 0)
-\treturn LOGICAL_ERROR;
-\tif((sz - len) < MAX_STR_SZ && (sz - len) > 0)
-\t\tstep = sz - len;
-\telse
-\t\tstep = MAX_STR_SZ;
+LONGSTR_LOOP_ITER = """
+\tcount++;
+\tlen -= MAX_STR_SZ;
+\tstr += MAX_STR_SZ;
 """
 LONGSTR_LOOP_END = "\n\treturn sz;\n"
 
@@ -194,8 +188,8 @@ def generate_longstr_prelude(probe, max_map_sz, max_str_sz):
     read_str = LONGSTR_LOOP_READ.format(longstr_buf_name = longstr_buf_name)
 
     unrolled_loop = LONGSTR_LOOP_INIT + read_str
-    for index in range(1, max_map_sz - 1):
-         unrolled_loop += LONGSTR_LOOP_STEP.format(index = index) + read_str
+    for index in range(1, max_map_sz):
+         unrolled_loop += LONGSTR_LOOP_ITER + read_str
 
     return prelude + LONG_STR_FN_DECL.replace("#UNROLLED_LOOP#", unrolled_loop + LONGSTR_LOOP_END)
 
