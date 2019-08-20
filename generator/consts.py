@@ -23,7 +23,7 @@ HEADERS = """
 """
 
 # Default long string map storage: this caps maximum string size at
-# ~ 134 MB (only one long string supported per probe).
+# ~ 67 MB (only one long string supported per probe).
 # NOTE that larger string sizes generate more instructions in the unrolled
 # long-string copying loop, which may result in maximum instruction size being exceeded, even though
 # there is enough space in the string map to store a string of that size.
@@ -40,9 +40,6 @@ LONG_STRING_PRELUDE = """
 #define KERNEL_FAULT    """ + str(errors["KERNEL_FAULT"]) + """
 #define LOGICAL_ERROR   """ + str(errors["LOGICAL_ERROR"]) + """
 
-#define MIN(i1, i2) (i1 <= i2 ? i1 : i2)
-#define MAX(i1, i2) (i1 >= i2 ? i1 : i2)
-
 struct str_chunk {{
 \tunsigned char str[MAX_STR_SZ];
 }};
@@ -54,10 +51,11 @@ LONG_STR_FN_NAME = "read_long_str"
 LONG_STR_FN_DECL = "static inline __attribute__((__always_inline__)) int " \
     + LONG_STR_FN_NAME + "(char *str, int sz) {\n #UNROLLED_LOOP# }\n"
 LONG_STR_FN_CALL = """
+\t// get long string
 \tchar *{arg_name}_str = NULL;
 \tbpf_usdt_readarg({arg_num}, ctx, &out.{arg_name}_sz);
 \tbpf_usdt_readarg({arg_num_inc}, ctx, &{arg_name}_str);
-\t out.{arg_name}_sz = read_long_str({arg_name}_str, out.{arg_name}_sz);
+\tout.{arg_name}_sz = read_long_str({arg_name}_str, out.{arg_name}_sz);
 """
 
 BPF_OUT_NAME = "out"
@@ -66,7 +64,7 @@ BPF_PERF_OUTPUT_ADDR_NAME = "addr_{}_{}"
 BPF_PERF_OUTPUT_ARG_NAME = "arg_{}_{}"
 BPF_PERF_OUTPUT_STRUCT_NAME = "{}_output"
 BPF_PERF_OUTPUT_MEMBER_ASSN = "\tout.{target} = {source_struct}.{source_struct_member};\n"
-BPF_PERF_SUBMIT_STMT = "\t{}.perf_submit(ctx, &out, sizeof(out));\n"
+BPF_PERF_SUBMIT_STMT = "\n\t// submit all\n\t{}.perf_submit(ctx, &out, sizeof(out));\n"
 
 BPF_PERF_OUTPUT_BOILERPLATE_MEMBER_DECLS ="""
 \tchar comm[TASK_COMM_LEN];
@@ -88,9 +86,9 @@ BPF_PERF_OUTPUT_BOILERPLATE ="""
 \tbpf_get_current_comm(&out.comm, sizeof(out.comm));
 """
 
-BPF_READ_ARG = "\tbpf_usdt_readarg({num}, ctx, &out.{output_member_name});\n"
+BPF_READ_ARG = "\n\tbpf_usdt_readarg({num}, ctx, &out.{output_member_name});\n"
 
-BPF_READ_STR = """
+BPF_READ_STR = """\n
 \tconst char* {addr_name} = NULL;
 \tbpf_usdt_readarg({arg_num}, ctx, &{addr_name});
 \tbpf_probe_read_str(&out.{out_member}, sizeof(out.{out_member}), {addr_name});
@@ -101,7 +99,7 @@ BPF_READ_STRUCT_MEMBER_STR = """
 \tbpf_probe_read_str(out.{target}, sizeof(out.{target}), {str_addr_name});
 """
 
-BPF_READ_STRUCT = """
+BPF_READ_STRUCT = """\n
 \tstruct {probe_name}_level_0_{index} {struct_name} = {{}};
 \tconst void* addr_{index} = NULL;
 \tbpf_usdt_readarg({arg_num}, ctx, &addr_{index});

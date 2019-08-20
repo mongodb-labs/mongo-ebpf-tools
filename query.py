@@ -4,7 +4,7 @@ import argparse
 import bson.raw_bson as raw_bson
 
 from bsonjs import dumps
-from generator.err import errors
+from generator.err import errors, error_strings
 from generator.consts import *
 from generator.generator import Probe
 from probes import ProbeHit, ProbeHistory, TimeTable, USDTThread, USDTArg
@@ -33,10 +33,10 @@ class QueryTimeTable(TimeTable):
                 print("----", probe, "----")
 
                 # check for errors:
-                errname = "objdata_{}_err".format(probe)
+                errname = "bson_err"
                 if errname in hit.args:
                     err = hit.args[errname]
-                    print("ERROR", err)
+                    print("ERROR", error_strings[err])
                     if err == errors["KERNEL_FAULT"]:
                         self.kernel_faults = self.kernel_faults + 1
                     elif err == errors["KEY_ERROR"]:
@@ -45,18 +45,20 @@ class QueryTimeTable(TimeTable):
                         self.others = self.others + 1
 
                 else:
-                    bson = hit.args["objdata_{}".format(probe)]
-                    sz = hit.args["objdata_{}_sz".format(probe)]
-                    print("printing", sz)
+                    ptr = hit.args["ptr"]
+                    bson = hit.args["bson"]
+                    sz = hit.args["bson_sz"]
+                    print("BSON REC'VED: [{}] [{}/{} bytes]".format(ptr, len(bson), sz))
                     try:
                         rbson = raw_bson.RawBSONDocument(bson)
                         print(dumps(rbson.raw))
                         self.successful = self.successful + 1
-                    except:
+                    except Exception as e:
                         out = ""
                         for b in bson:
                             out += str(hex(b))
                         print(out)
+                        print(e)
                         self.bad_bson = self.bad_bson + 1
 
                 self.lk.release()
@@ -78,9 +80,21 @@ class QueryTimeTable(TimeTable):
 def sigint_handler_gen(mr, tt):
     def handler(signal, frame):
         mr.kill_all()
+        print("-----------------------------------")
+        print(str(tt))
         tt.dump_stats()
         exit(0)
     return handler
+
+def ptr_and_bson_probe(name, samples, chunk_sz, map_sz):
+    return {PROBE_NAME_KEY: name,
+                 SAMPLES_PROPORTION_KEY: samples,
+                 MAX_STR_SZ_KEY: chunk_sz,
+                 MAX_MAP_SZ_KEY: map_sz,
+                 PROBE_ARGS_KEY: [
+                    {ARG_TYPE_KEY: POINTER_TYPE, ARG_NAME_KEY: "ptr"},
+                    {ARG_TYPE_KEY: LONG_STRING_TYPE, ARG_NAME_KEY: "bson"}
+                 ]}
 
 # Main #
 
@@ -117,14 +131,10 @@ if __name__ == '__main__':
     time_table = QueryTimeTable(None)
 
     workers = []
-    for probe_name in ["query"]:#, "queryR", "query2"]:#["query", "query1", "query1R", "queryR", "query2", "query3"]:
-        probe = {PROBE_NAME_KEY: probe_name,
-                 SAMPLES_PROPORTION_KEY: args.sample,
-                 MAX_STR_SZ_KEY: args.chunk,
-                 MAX_MAP_SZ_KEY: args.map,
-                 PROBE_ARGS_KEY: [{ARG_TYPE_KEY: LONG_STRING_TYPE,
-                                   ARG_NAME_KEY: "objdata_{}".format(probe_name)}]}
-        worker = USDTThread(args.pid[0], [probe], time_table)
+    for probe_name in ["AggRequestParsePipeline"]:#["queryRequestFilter", "queryRequestProj", "queryRequestSort", "queryRequestHint",
+                      # "queryRequestReadConcern", "queryRequestCollation", "queryRequestUnwrappedReadPref",
+                      # ["AggRequestParsePipeline"]:
+        worker = USDTThread(args.pid[0], [ptr_and_bson_probe(probe_name, args.sample, args.chunk, args.map)], time_table)
         workers.append(worker)
 
     mr = WorkerMaster(workers)

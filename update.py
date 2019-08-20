@@ -116,7 +116,7 @@ if __name__ == '__main__':
     time_table = BSONTimeTable(None)
 
     workers = []
-    for probe_name in ["updateQuery", "projQuery"]:
+    for probe_name in ["updateQuery", "updateProj", "updateSort"]:
         probe = {PROBE_NAME_KEY: probe_name,
                  SAMPLES_PROPORTION_KEY: args.sample,
                  MAX_STR_SZ_KEY: args.chunk,

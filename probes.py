@@ -2,13 +2,15 @@
 
 import ctypes as ct
 
+from bcc import BPF, USDT
+from util import WorkerThread, Counter, Timer
+from threading import RLock
+from time import sleep
+
 from generator.generator import Generator, Probe
 from generator.consts import *
 from generator.err import *
-from bcc import BPF, USDT
-from util import WorkerThread, Counter, Timer
-import ctypes
-from time import sleep
+from table import *
 
 #####################################################################################
 
@@ -35,7 +37,15 @@ class ProbeHit:
                 counters[field] = Counter()
             counters[field].encounter(getattr(self, field))
 
-    def __str__(self):
+    def __str__(self):#prettyprint(self):
+        out = self.name + "{ "
+        for field in self.fields:
+            out += "{}: {}, ".format(field, str(getattr(self, field)))
+        for arg in self.args:
+            out += "{}: {}, ".format(arg, str(self.args[arg]))
+        return out + "}\n"
+
+    def row_str(self):
         return " | ".join(str(getattr(self, field)) for field in self.fields)
 
 class ProbeHistory:
@@ -81,50 +91,61 @@ class ProbeHistory:
 
 class TimeTable:
     def __init__(self, view):
+        # multiple threads often modify a single timetable
+        self.lock = RLock()
+
         self.times = dict()
+        self.global_history = SortedTable("tid", "ns") # tid dictionary
         self.on_add = self._callback_gen(view)
         self.lost = 0
-        self.last_probe = None
-        # generate stats counters
+
+        # generate additional stats counters
         self.counters = dict();
         self.counters["probe"] = Counter()
         self.counters["size"] = Counter()
 
     def _callback_gen(self, view):
         def _on_add(probe, hit):
-            if view != None:
-                view.on_probe_hit("{} | {}\n".format(probe, hit),
-                                  str(self),
-                                  probe,
-                                  str(self.get(probe)))
+            with self.lock:
+                if view != None:
+                    view.on_probe_hit("{} | {}\n".format(probe, hit.row_str()),
+                                      str(self),
+                                      probe,
+                                      str(self.get(probe)))
         return _on_add
 
     def add(self, probe, hit):
-        if self.has(probe):
-            self.times[probe].append(hit)
-        else:
-            ph = ProbeHistory()
-            ph.append(hit)
-            self.times[probe] = ph
+        with self.lock:
+            if self.has(probe):
+                # TODO: this may not report correct time due to potentially out of order events
+                self.times[probe].append(hit)
+            else:
+                ph = ProbeHistory()
+                ph.append(hit)
+                self.times[probe] = ph
 
-        # update counters
-        self.counters["probe"].encounter(probe)
-        self.counters["size"].encounter(hit.size)
-        hit.update_counters(self.counters)
+            # update counters
+            self.counters["probe"].encounter(probe)
+            self.counters["size"].encounter(hit.size)
+            hit.update_counters(self.counters)
 
-        # callback
-        self.on_add(probe, hit)
-        self.last_probe = probe
+            self.global_history.add(hit)
+
+            # callback
+            self.on_add(probe, hit)
 
     def add_lost(self, probe, lost):
-        self.times[probe].add_lost(lost)
-        self.lost += lost
+        with self.lock:
+            self.times[probe].add_lost(lost)
+            self.lost += lost
 
     def has(self, probe):
-        return probe in self.times
+        with self.lock:
+            return probe in self.times
 
     def get(self, probe):
-        return self.times[probe]
+        with self.lock:
+            return self.times[probe]
 
     def __str__(self):
         out = ""
@@ -154,8 +175,6 @@ class USDTThread(WorkerThread):
         self._lost = dict()
         self.time_table = time_table
         self._init_bpf()
-        # TODO: remove
-        print("DONE")
         WorkerThread.__init__(self, target=self._work_gen())
 
     def _work_gen(self):
@@ -166,6 +185,7 @@ class USDTThread(WorkerThread):
     def _callback_gen(self, probe):
         def process_callback(cpu, data, size):
             event = self._bpf[probe.name].event(data)
+            # gather generic probe data
             hit = ProbeHit(name = probe.name,
                            comm = event.comm,
                            pid = event.pid,
@@ -173,35 +193,41 @@ class USDTThread(WorkerThread):
                            ns = event.ns,
                            cpu = cpu,
                            size = size)
-            for arg in probe.args:
-                # long str is a special case! must read from map
-                if arg.type == LONG_STRING_TYPE:
-                    sz_name = arg.name + "_sz"
-                    sz = getattr(event, sz_name)
-                    if sz < 0: # ERROR
-                        print(error_strings[sz])
-                        hit.args[arg.name + "_err"] = sz
-                    else:
-                        try:
-                            hit.args[sz_name] = sz
-                            hit.args[arg.name] = self.read_long_str(sz, probe)
-                        except KeyError:
-                            hit.args[arg.name + "_err"] = errors["KEY_ERROR"]
-                elif arg.type == STRUCT_TYPE:
-                    hit.args[arg.name] = USDTThread.attach_args_for_struct(event, hit, arg.fields)
-                else:
-                    hit.args[arg.name] = getattr(event, arg.name)
+            # parse probe arguments
+            hit.args = self.args_2_dict(event, hit.args, probe)
             self.time_table.add(probe.name, hit)
+
         return process_callback
 
-    def attach_args_for_struct(event, hit, args, level=1):
+    def args_2_dict(self, event, args, probe, level = 0):
         result = dict()
-        for arg in args:
-            if arg.type == STRUCT_TYPE:
-                result[arg.name] = attach_args_for_struct(event, hit, arg.fields, level + 1)
+
+        for arg in probe.args:
+            if arg.type == LONG_STRING_TYPE:
+                # passing structs containing long strings is not supported by the generator
+                assert level == 0
+
+                sz_name = arg.name + "_sz"
+                err_name = arg.name + "_err"
+                sz = getattr(event, sz_name)
+
+                if sz < 0: # a negative size indicates an error
+                    print(error_strings[sz])
+                    result[err_name] = sz
+
+                else:
+                    try:
+                        result[sz_name] = sz
+                        result[arg.name] = self.read_long_str(sz, probe)
+                    except KeyError:
+                        result[err_name] = errors["KEY_ERROR"]
+
+            elif arg.type == STRUCT_TYPE:
+                result[arg.name] = self.args_2_dict(event, arg.fields, level + 1)
+
             else:
-                # TODO: refactor out the LONG_STRING_TYPE
-                result[arg.name] = getattr(event, arg.name + '_' + str(level))
+                result[arg.name] = getattr(event, arg.name if level == 0 else arg.name + '_' + str(level))
+
         return result
 
     def read_long_str(self, sz, probe):
@@ -225,7 +251,7 @@ class USDTThread(WorkerThread):
         for probe in self._probes:
             self._generator.add_probe(probe)
         self.bpf_code = self._generator.finish()
-        print(self.bpf_code)
+        # print(self.bpf_code)
 
     def _init_bpf(self):
         self.gen_code()

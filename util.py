@@ -1,7 +1,7 @@
 #!/bin/python3
 
 from sys import exit
-from threading import Thread
+from threading import Lock, Thread
 from time import sleep
 
 #####################################################################################

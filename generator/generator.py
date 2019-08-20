@@ -25,7 +25,7 @@ class Probe:
                 # check if we have a long string argument
                 if self.args[-1].type == LONG_STRING_TYPE:
                     # we do not currently support storing > 1 long string in our map
-                    # TODO
+                    # TODO - ring buffer
                     assert not self.has_long_str
                     self.has_long_str = True
         else:
