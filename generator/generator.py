@@ -28,6 +28,8 @@ class Probe:
                     # TODO - ring buffer
                     assert not self.has_long_str
                     self.has_long_str = True
+                    self.buf_name = LONG_STRING_BUF_NAME.format(self.name)
+                    self.buf_idx_name = self.args[-1].name + "_idx"
         else:
             self.args = []
 

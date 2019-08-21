@@ -3,7 +3,7 @@
 import ctypes as ct
 
 from bcc import BPF, USDT
-from util import WorkerThread, Counter, Timer
+from math import ceil
 from threading import RLock
 from time import sleep
 
@@ -11,6 +11,7 @@ from generator.generator import Generator, Probe
 from generator.consts import *
 from generator.err import *
 from table import *
+from util import WorkerThread, Counter, Timer
 
 #####################################################################################
 
@@ -39,8 +40,8 @@ class ProbeHit:
 
     def __str__(self):#prettyprint(self):
         out = self.name + "{ "
-        for field in self.fields:
-            out += "{}: {}, ".format(field, str(getattr(self, field)))
+        #for field in self.fields:
+        #    out += "{}: {}, ".format(field, str(getattr(self, field)))
         for arg in self.args:
             out += "{}: {}, ".format(arg, str(self.args[arg]))
         return out + "}\n"
@@ -185,6 +186,7 @@ class USDTThread(WorkerThread):
     def _callback_gen(self, probe):
         def process_callback(cpu, data, size):
             event = self._bpf[probe.name].event(data)
+
             # gather generic probe data
             hit = ProbeHit(name = probe.name,
                            comm = event.comm,
@@ -193,13 +195,15 @@ class USDTThread(WorkerThread):
                            ns = event.ns,
                            cpu = cpu,
                            size = size)
+            end_of_map_idx = getattr(event, probe.buf_idx_name) if probe.has_long_str else 0
+            
             # parse probe arguments
-            hit.args = self.args_2_dict(event, hit.args, probe)
+            hit.args = self.args_2_dict(event, hit.args, probe, end_of_map_idx)
             self.time_table.add(probe.name, hit)
 
         return process_callback
 
-    def args_2_dict(self, event, args, probe, level = 0):
+    def args_2_dict(self, event, args, probe, end_of_map_idx, level = 0):
         result = dict()
 
         for arg in probe.args:
@@ -218,7 +222,7 @@ class USDTThread(WorkerThread):
                 else:
                     try:
                         result[sz_name] = sz
-                        result[arg.name] = self.read_long_str(sz, probe)
+                        result[arg.name] = self.read_long_str(sz, probe, end_of_map_idx)
                     except KeyError:
                         result[err_name] = errors["KEY_ERROR"]
 
@@ -230,14 +234,15 @@ class USDTThread(WorkerThread):
 
         return result
 
-    def read_long_str(self, sz, probe):
-        buf = LONG_STRING_BUF_NAME.format(probe.name)
-        i = 0
+    def read_long_str(self, sz, probe, end_of_map_idx):
+        # get index of starting chunk
+        i = end_of_map_idx
+        print("LAST_IDX:", end_of_map_idx, "| START_IDX:", i, "|", probe.name)
         sz_remaining = sz
         out = []
         while i < probe.max_map_sz and sz_remaining > 0:
             chunk_sz = min(sz_remaining, probe.max_str_sz)
-            out += self._bpf[buf][i].str[:chunk_sz]
+            out += self._bpf[probe.buf_name][i].str[:chunk_sz]
             sz_remaining -= chunk_sz
             i = i + 1
         return bytes(out)
@@ -251,7 +256,7 @@ class USDTThread(WorkerThread):
         for probe in self._probes:
             self._generator.add_probe(probe)
         self.bpf_code = self._generator.finish()
-        # print(self.bpf_code)
+        print(self.bpf_code)
 
     def _init_bpf(self):
         self.gen_code()

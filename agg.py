@@ -86,7 +86,7 @@ class AggTimeTable(TimeTable):
         def process_callback(probe, hit):
             if __name__ == "__main__":
                 with self.lock:
-                    print("[", hit.ns, "] [", hit.tid, "]", probe)
+#                    print("[", hit.ns, "] [", hit.tid, "]", probe)
                     # TODO: abstract away bson logic/ make this less awk
                     # check for errors:
                     errname = "bson_err"
