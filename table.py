@@ -12,6 +12,8 @@ class DoublyLinkedNode:
     def __init__(self, value, nxt = None):
         self.value = value
         self.next = nxt
+        if self.next != None:
+            self.next.prev = self
         self.prev = None
 
     def link(self, value):
@@ -39,7 +41,7 @@ class SortedTable:
         self._lock = Lock()
 
     def _is_ascending(self, item_old, item_new):
-        return getattr(item_old, self._sort_key) < getattr(item_new, self._sort_key)
+        return getattr(item_old, self._sort_key) <= getattr(item_new, self._sort_key)
 
     def add(self, item):
         idx_key = getattr(item, self._idx_key)

@@ -55,7 +55,7 @@ class Bundle:
     def __str__(self):
         out = "{\n"
         out += "#probes: {}\n".format(len(self._probes))
-        out += "tid: {}\n".format(self.tid)
+        #out += "tid: {}\n".format(self.tid)
         out += "count: {}\n".format(self.count)
         out += " [\n"
         for probe in self._probes:
@@ -65,11 +65,12 @@ class Bundle:
         return out + " ]\n}\n"
 
 class AggTimeTable(TimeTable):
-    def __init__(self, view, probes):
+    def __init__(self, view, probes, file_name):
         TimeTable.__init__(self, view)
         self.on_add = self._callback_gen(view)
         self.probes = probes
         self.bundles = {}#TODO dedup wrt ProbeHistory
+        self.file = file_name
 
         # error stats
         self.counters["BsonErrors"] = Counter()
@@ -107,38 +108,47 @@ class AggTimeTable(TimeTable):
                             self.counters["BsonErrors"].encounter("success")
  
                         except Exception as e:
-                            out = ""
-                            for b in bson:
-                                out += str(hex(b))
-                            print(out)
-                            print(e)
+                            #out = ""
+                            #for b in bson:
+                            #    out += str(hex(b))
+                            #print(out)
+                            #print(e)
                             self.counters["BsonErrors"].encounter("BAD_BSON")
 
         return process_callback
 
     def dumps(self):
-        print(str(self))
+        out = str(self)
         for tid in self.global_history.buckets:
-            print("TID:", tid)
             hit_list = self.global_history.buckets[tid].head
             bundle = Bundle()
             prev = None
             while hit_list != None:
+                print("[", hit_list.value.ns, "] [", hit_list.value.tid, "]", hit_list.value.name)
                 if prev != None:
                     # for testing purposes, ensure this is true
                     assert prev.ns < hit_list.value.ns
-                    prev = hit_list.value
+                prev = hit_list.value
                 bundle.push(hit_list.value)
                 hit_list = hit_list.next
-            print(bundle)
-            print()
+            out += str(bundle)
+
+        if self.file:
+            try:
+                with open(self.file, "w") as fd:
+                    fd.write(out)
+            except IOError as e:
+                print(e)
+                print(out)
+        else:
+            print(out)
 
 ####################################################################################
 
 def sigint_handler_gen(mr, tt):
     def handler(signal, frame):
         mr.kill_all()
-        print("-----------------------------------")
+        print("---------------- SORTED -------------------")
         tt.dumps()
         exit(0)
     return handler
@@ -181,6 +191,12 @@ if __name__ == '__main__':
                         nargs='?',
                         default=MAX_MAP_SZ,
                         help='maximum map size')
+    parser.add_argument('-f', '--file',
+                        metavar='file',
+                        type=str,
+                        nargs='?',
+                        default=None,
+                        help='output file for bundle')
 
     args = parser.parse_args()
     print(args)
@@ -203,7 +219,7 @@ if __name__ == '__main__':
     }
 
     mr = None
-    time_table = AggTimeTable(None, probes)
+    time_table = AggTimeTable(None, probes, args.file)
 
     workers = []
     for probe_name in probes:
@@ -212,6 +228,7 @@ if __name__ == '__main__':
 
     mr = WorkerMaster(workers)
     mr.start_all()
+    print("Listening for probes.")
 
     signal(SIGINT, sigint_handler_gen(mr, time_table))
     Event().wait() # wait for keyboard interrupt forever
