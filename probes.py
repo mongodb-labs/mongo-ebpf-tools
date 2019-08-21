@@ -195,15 +195,15 @@ class USDTThread(WorkerThread):
                            ns = event.ns,
                            cpu = cpu,
                            size = size)
-            end_of_map_idx = getattr(event, probe.buf_idx_name) if probe.has_long_str else 0
+            start_chunk_idx = getattr(event, probe.buf_idx_name) if probe.has_long_str else 0
             
             # parse probe arguments
-            hit.args = self.args_2_dict(event, hit.args, probe, end_of_map_idx)
+            hit.args = self.args_2_dict(event, hit.args, probe, start_chunk_idx)
             self.time_table.add(probe.name, hit)
 
         return process_callback
 
-    def args_2_dict(self, event, args, probe, end_of_map_idx, level = 0):
+    def args_2_dict(self, event, args, probe, start_chunk_idx, level = 0):
         result = dict()
 
         for arg in probe.args:
@@ -214,6 +214,7 @@ class USDTThread(WorkerThread):
                 sz_name = arg.name + "_sz"
                 err_name = arg.name + "_err"
                 sz = getattr(event, sz_name)
+                result[probe.buf_idx_name] = start_chunk_idx
 
                 if sz < 0: # a negative size indicates an error
                     print(error_strings[sz])
@@ -222,7 +223,7 @@ class USDTThread(WorkerThread):
                 else:
                     try:
                         result[sz_name] = sz
-                        result[arg.name] = self.read_long_str(sz, probe, end_of_map_idx)
+                        result[arg.name] = self.read_long_str(sz, probe, start_chunk_idx)
                     except KeyError:
                         result[err_name] = errors["KEY_ERROR"]
 
@@ -234,10 +235,9 @@ class USDTThread(WorkerThread):
 
         return result
 
-    def read_long_str(self, sz, probe, end_of_map_idx):
+    def read_long_str(self, sz, probe, start_chunk_idx):
         # get index of starting chunk
-        i = end_of_map_idx
-        print("LAST_IDX:", end_of_map_idx, "| START_IDX:", i, "|", probe.name)
+        i = start_chunk_idx
         sz_remaining = sz
         out = []
         while i < probe.max_map_sz and sz_remaining > 0:

@@ -1,0 +1,384 @@
+probe: [total 170]
+ - aggRequestBatchSize: 18%
+ - aggRequestParse_start: 18%
+ - aggRequestParse_end: 18%
+ - aggRequestParsePipeline: 45%
+size: [total 340]
+ - 44: 100%
+BsonErrors: [total 77]
+ - BAD_BSON: 66%
+ - success: 33%
+comm: [total 170]
+ - conn34: 100%
+pid: [total 170]
+ - 9432: 100%
+tid: [total 170]
+ - 22284: 100%
+cpu: [total 170]
+ - 6: 5%
+ - 7: 8%
+ - 1: 54%
+ - 2: 31%
+lost: 0{
+#probes: 32
+count: None
+ [
+   None
+   {
+   #probes: 5
+   count: 0
+    [
+      aggRequestParse_start{ count: 0, }
+      aggRequestParsePipeline{ bson_sz: 53, bson: b'\x18\x00\x00\x00\x02$unwind\x00\x06\x00\x00\x00$tags\x00\x00\x00\x00\xf0?\x00\x00\xf0?\x01pageViews\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00', }
+      aggRequestParsePipeline{ bson_sz: 30, bson: b'\x18\x00\x00\x00\x02$unwind\x00\x06\x00\x00\x00$tags\x00\x00\x00\x00\xf0?\x00\x00', }
+      aggRequestBatchSize{ batchSize: 0, }
+      aggRequestParse_end{ count: 0, }
+    ]
+   }
+   {
+   #probes: 4
+   count: 1
+    [
+      aggRequestParse_start{ count: 1, }
+      aggRequestParsePipeline{ bson_sz: 24, bson: { "$unwind" : "$tags" }, }
+      aggRequestBatchSize{ batchSize: 0, }
+      aggRequestParse_end{ count: 1, }
+    ]
+   }
+   {
+   #probes: 5
+   count: 2
+    [
+      aggRequestParse_start{ count: 2, }
+      aggRequestParsePipeline{ bson_sz: 23, bson: b'\x1e\x00\x00\x00\x03$sort\x00\x12\x00\x00\x00\x01b.f\x00\x00\x00\x00', }
+      aggRequestParsePipeline{ bson_sz: 30, bson: { "$sort" : { "b.f" : -1.0 } }, }
+      aggRequestBatchSize{ batchSize: 0, }
+      aggRequestParse_end{ count: 2, }
+    ]
+   }
+   {
+   #probes: 5
+   count: 3
+    [
+      aggRequestParse_start{ count: 3, }
+      aggRequestParsePipeline{ bson_sz: 69, bson: b'\x18\x00\x00\x00\x02$unwind\x00\x06\x00\x00\x00$tags\x00\x00r\x00\x00\x00\x00\x00\x00\x00\xf0?\x01tags\x00\x00\x00\x00\x00\x00\x00\xf0?\x01pageViews\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00', }
+      aggRequestParsePipeline{ bson_sz: 24, bson: { "$unwind" : "$tags" }, }
+      aggRequestBatchSize{ batchSize: 0, }
+      aggRequestParse_end{ count: 3, }
+    ]
+   }
+   {
+   #probes: 5
+   count: 4
+    [
+      aggRequestParse_start{ count: 4, }
+      aggRequestParsePipeline{ bson_sz: 70, bson: b'\x1e\x00\x00\x00\x03$sort\x00\x12\x00\x00\x00\x01_id\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00$other.foo\x00\x02otherbar\x00\x0b\x00\x00\x00$other.bar\x00\x00\x00', }
+      aggRequestParsePipeline{ bson_sz: 30, bson: { "$sort" : { "_id" : 1.0 } }, }
+      aggRequestBatchSize{ batchSize: 0, }
+      aggRequestParse_end{ count: 4, }
+    ]
+   }
+   {
+   #probes: 5
+   count: 5
+    [
+      aggRequestParse_start{ count: 5, }
+      aggRequestParsePipeline{ bson_sz: 91, bson: b'\x1e\x00\x00\x00\x03$sort\x00\x12\x00\x00\x00\x01_id\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\xf0?\x03daveWroteIt\x00*\x00\x00\x00\x04$eq\x00 \x00\x00\x00\x020\x00\x08\x00\x00\x00$author\x00\x021\x00\x05\x00\x00\x00dave\x00\x00\x00\x00\x00', }
+      aggRequestParsePipeline{ bson_sz: 30, bson: { "$sort" : { "_id" : 1.0 } }, }
+      aggRequestBatchSize{ batchSize: 0, }
+      aggRequestParse_end{ count: 5, }
+    ]
+   }
+   {
+   #probes: 6
+   count: 6
+    [
+      aggRequestParse_start{ count: 6, }
+      aggRequestParsePipeline{ bson_sz: 69, bson: b'Y\x00\x00\x00\x03$project\x00J\x00\x00\x00\x01author\x00\x00\x00\x00\x00\x00\x00\xf0?\x03subDocument\x00(\x00\x00\x00\x02foo\x00\x0b\x00\x00\x00$pageView', }
+      aggRequestParsePipeline{ bson_sz: 24, bson: b'Y\x00\x00\x00\x03$project\x00J\x00\x00\x00\x01autho', }
+      aggRequestParsePipeline{ bson_sz: 89, bson: { "$project" : { "author" : 1.0, "subDocument" : { "foo" : "$pageViews", "bar" : "$tags" } } }, }
+      aggRequestBatchSize{ batchSize: 0, }
+      aggRequestParse_end{ count: 6, }
+    ]
+   }
+   {
+   #probes: 6
+   count: 7
+    [
+      aggRequestParse_start{ count: 7, }
+      aggRequestParsePipeline{ bson_sz: 69, bson: b'\xee\x00\x00\x00\x03$project\x00\xdf\x00\x00\x00\x01author\x00\x00\x00\x00\x00\x00\x00\xf0?\x02tag\x00\x06\x00\x00\x00$tags\x00\x01pageViews\x00\x00\x00\x00\x00\x00\x00\xf0?\x03', }
+      aggRequestParsePipeline{ bson_sz: 24, bson: b'\xee\x00\x00\x00\x03$project\x00\xdf\x00\x00\x00\x01autho', }
+      aggRequestParsePipeline{ bson_sz: 238, bson: { "$project" : { "author" : 1.0, "tag" : "$tags", "pageViews" : 1.0, "daveWroteIt" : { "$eq" : [ "$author", "dave" ] }, "weLikeIt" : { "$or" : [ { "$eq" : [ "$author", "dave" ] }, { "$eq" : [ "$tags", "good" ] } ] } } }, }
+      aggRequestBatchSize{ batchSize: 0, }
+      aggRequestParse_end{ count: 7, }
+    ]
+   }
+   {
+   #probes: 5
+   count: 8
+    [
+      aggRequestParse_start{ count: 8, }
+      aggRequestParsePipeline{ bson_sz: 120, bson: b'\x1e\x00\x00\x00\x03$sort\x00\x12\x00\x00\x00\x01_id\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x04$add\x00Q\x00\x00\x00\x020\x00\x0b\x00\x00\x00$pageViews\x00\x031\x007\x00\x00\x00\x04$ifNull\x00)\x00\x00\x00\x020\x00\x0b\x00\x00\x00$other.foo\x00\x021\x00\x0b\x00\x00\x00$other.bar\x00\x00\x00\x00\x00\x00\x00', }
+      aggRequestParsePipeline{ bson_sz: 30, bson: { "$sort" : { "_id" : 1.0 } }, }
+      aggRequestBatchSize{ batchSize: 0, }
+      aggRequestParse_end{ count: 8, }
+    ]
+   }
+   {
+   #probes: 5
+   count: 9
+    [
+      aggRequestParse_start{ count: 9, }
+      aggRequestParsePipeline{ bson_sz: 88, bson: b'\x18\x00\x00\x00\x02$unwind\x00\x06\x00\x00\x00$tags\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01author\x00\x00\x00\x00\x00\x00\x00\xf0?\x01tags\x00\x00\x00\x00\x00\x00\x00\xf0?\x01comments.author\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00', }
+      aggRequestParsePipeline{ bson_sz: 24, bson: { "$unwind" : "$tags" }, }
+      aggRequestBatchSize{ batchSize: 0, }
+      aggRequestParse_end{ count: 9, }
+    ]
+   }
+   {
+   #probes: 5
+   count: 10
+    [
+      aggRequestParse_start{ count: 10, }
+      aggRequestParsePipeline{ bson_sz: 86, bson: b'!\x00\x00\x00\x03$sort\x00\x15\x00\x00\x00\x01author\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00uthor\x00\x00\x00\x00\x00\x00\x00\xf0?\x02commentsAuthor\x00\x11\x00\x00\x00$comments.author\x00\x00\x00', }
+      aggRequestParsePipeline{ bson_sz: 33, bson: b' \x00\x00\x00\x03$sort\x00\x14\x00\x00\x00\x01title\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00', }
+      aggRequestBatchSize{ batchSize: 0, }
+      aggRequestParse_end{ count: 10, }
+    ]
+   }
+   {
+   #probes: 4
+   count: 11
+    [
+      aggRequestParse_start{ count: 11, }
+      aggRequestParsePipeline{ bson_sz: 32, bson: { "$sort" : { "title" : 1.0 } }, }
+      aggRequestBatchSize{ batchSize: 0, }
+      aggRequestParse_end{ count: 11, }
+    ]
+   }
+   {
+   #probes: 6
+   count: 12
+    [
+      aggRequestParse_start{ count: 12, }
+      aggRequestParsePipeline{ bson_sz: 33, bson: { "$sort" : { "author" : 1.0 } }, }
+      aggRequestParsePipeline{ bson_sz: 61, bson: b'!\x00\x00\x00\x03$sort\x00\x15\x00\x00\x00\x01author\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00author\x00\x0f\x00\x00\x00$items.authors\x00\x00\x00', }
+      aggRequestParsePipeline{ bson_sz: 33, bson: b'\x1e\x00\x00\x00\x03$sort\x00\x12\x00\x00\x00\x01_id\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00a\x00\x00', }
+      aggRequestBatchSize{ batchSize: 0, }
+      aggRequestParse_end{ count: 12, }
+    ]
+   }
+   {
+   #probes: 5
+   count: 13
+    [
+      aggRequestParse_start{ count: 13, }
+      aggRequestParsePipeline{ bson_sz: 129, bson: b'\x1e\x00\x00\x00\x03$sort\x00\x12\x00\x00\x00\x01_id\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00a\x00\x00\x00\x04$multiply\x00Q\x00\x00\x00\x020\x00\x0b\x00\x00\x00$pageViews\x00\x031\x007\x00\x00\x00\x04$ifNull\x00)\x00\x00\x00\x020\x00\x0b\x00\x00\x00$other.foo\x00\x021\x00\x0b\x00\x00\x00$other.bar\x00\x00\x00\x00\x00\x00\x00', }
+      aggRequestParsePipeline{ bson_sz: 30, bson: { "$sort" : { "_id" : 1.0 } }, }
+      aggRequestBatchSize{ batchSize: 0, }
+      aggRequestParse_end{ count: 13, }
+    ]
+   }
+   {
+   #probes: 5
+   count: 14
+    [
+      aggRequestParse_start{ count: 14, }
+      aggRequestParsePipeline{ bson_sz: 132, bson: b'\x1e\x00\x00\x00\x03$sort\x00\x12\x00\x00\x00\x01_id\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00ce\x00a\x00\x00\x00\x04$subtract\x00Q\x00\x00\x00\x020\x00\x0b\x00\x00\x00$pageViews\x00\x031\x007\x00\x00\x00\x04$ifNull\x00)\x00\x00\x00\x020\x00\x0b\x00\x00\x00$other.foo\x00\x021\x00\x0b\x00\x00\x00$other.bar\x00\x00\x00\x00\x00\x00\x00', }
+      aggRequestParsePipeline{ bson_sz: 30, bson: { "$sort" : { "_id" : 1.0 } }, }
+      aggRequestBatchSize{ batchSize: 0, }
+      aggRequestParse_end{ count: 14, }
+    ]
+   }
+   {
+   #probes: 5
+   count: 15
+    [
+      aggRequestParse_start{ count: 15, }
+      aggRequestParsePipeline{ bson_sz: 126, bson: b'\x1e\x00\x00\x00\x03$sort\x00\x12\x00\x00\x00\x01_id\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00r\x00\\\x00\x00\x00\x04$mod\x00Q\x00\x00\x00\x030\x007\x00\x00\x00\x04$ifNull\x00)\x00\x00\x00\x020\x00\x0b\x00\x00\x00$other.foo\x00\x021\x00\x0b\x00\x00\x00$other.bar\x00\x00\x00\x021\x00\x0b\x00\x00\x00$pageViews\x00\x00\x00\x00\x00', }
+      aggRequestParsePipeline{ bson_sz: 30, bson: { "$sort" : { "_id" : 1.0 } }, }
+      aggRequestBatchSize{ batchSize: 0, }
+      aggRequestParse_end{ count: 15, }
+    ]
+   }
+   {
+   #probes: 5
+   count: 16
+    [
+      aggRequestParse_start{ count: 16, }
+      aggRequestParsePipeline{ bson_sz: 74, bson: b'\x1e\x00\x00\x00\x03$sort\x00\x12\x00\x00\x00\x01_id\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x02$toUpper\x00\x08\x00\x00\x00$author\x00\x00\x01pageViews\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00', }
+      aggRequestParsePipeline{ bson_sz: 30, bson: { "$sort" : { "_id" : 1.0 } }, }
+      aggRequestBatchSize{ batchSize: 0, }
+      aggRequestParse_end{ count: 16, }
+    ]
+   }
+   {
+   #probes: 6
+   count: 17
+    [
+      aggRequestParse_start{ count: 17, }
+      aggRequestParsePipeline{ bson_sz: 74, bson: b'\x1e\x00\x00\x00\x03$sort\x00\x12\x00\x00\x00\x01_id\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x02$toLower\x00\x08\x00\x00\x00$author\x00\x00\x01pageViews\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00', }
+      aggRequestParsePipeline{ bson_sz: 74, bson: b'\x1e\x00\x00\x00\x03$sort\x00\x12\x00\x00\x00\x01_id\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x04$substrBytes\x00*\x00\x00\x00\x020\x00\x08\x00\x00\x00$author\x00\x011\x00\x00\x00\x00\x00\x00\x00\xf0?', }
+      aggRequestParsePipeline{ bson_sz: 30, bson: { "$sort" : { "_id" : 1.0 } }, }
+      aggRequestBatchSize{ batchSize: 0, }
+      aggRequestParse_end{ count: 17, }
+    ]
+   }
+   {
+   #probes: 5
+   count: 18
+    [
+      aggRequestParse_start{ count: 18, }
+      aggRequestParsePipeline{ bson_sz: 89, bson: b'\x1e\x00\x00\x00\x03$sort\x00\x12\x00\x00\x00\x01_id\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\xf0?\x03thisisalametest\x00-\x00\x00\x00\x04$strcasecmp\x00\x1b\x00\x00\x00\x020\x00\x04\x00\x00\x00foo\x00\x021\x00\x04\x00\x00\x00b', }
+      aggRequestParsePipeline{ bson_sz: 30, bson: { "$sort" : { "_id" : 1.0 } }, }
+      aggRequestBatchSize{ batchSize: 0, }
+      aggRequestParse_end{ count: 18, }
+    ]
+   }
+   {
+   #probes: 5
+   count: 19
+    [
+      aggRequestParse_start{ count: 19, }
+      aggRequestParsePipeline{ bson_sz: 158, bson: b'\x1e\x00\x00\x00\x03$sort\x00\x12\x00\x00\x00\x01_id\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\xf0?\x01posted\x00\x00\x00\x00\x00\x00\x00\xf0?\x03seconds\x00\x1a\x00\x00\x00\x02$second\x00\x08\x00\x00\x00$posted\x00\x00\x03minutes\x00\x1a\x00\x00\x00\x02$minute\x00\x08\x00\x00\x00$posted\x00\x00\x03hour\x00\x18\x00\x00\x00\x02$hour\x00\x08\x00\x00\x00$posted\x00\x00\x03dayOfY', }
+      aggRequestParsePipeline{ bson_sz: 30, bson: { "$sort" : { "_id" : 1.0 } }, }
+      aggRequestBatchSize{ batchSize: 0, }
+      aggRequestParse_end{ count: 19, }
+    ]
+   }
+   {
+   #probes: 5
+   count: 20
+    [
+      aggRequestParse_start{ count: 20, }
+      aggRequestParsePipeline{ bson_sz: 367, bson: b'\x1e\x00\x00\x00\x03$sort\x00\x12\x00\x00\x00\x01_id\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\xf0?\x01posted\x00\x00\x00\x00\x00\x00\x00\xf0?\x03seconds\x00\x1a\x00\x00\x00\x02$second\x00\x08\x00\x00\x00$posted\x00\x00\x03minutes\x00\x1a\x00\x00\x00\x02$minute\x00\x08\x00\x00\x00$posted\x00\x00\x03hour\x00\x18\x00\x00\x00\x02$hour\x00\x08\x00\x00\x00$posted\x00\x00\x03dayOfYear\x00\x1d\x00\x00\x00\x02$dayOfYear\x00\x08\x00\x00\x00$posted\x00\x00\x03dayOfMonth\x00\x1e\x00\x00\x00\x02$dayOfMonth\x00\x08\x00\x00\x00$posted\x00\x00\x03dayOfWeek\x00\x1d\x00\x00\x00\x02$dayOfWeek\x00\x08\x00\x00\x00$posted\x00\x00\x03month\x00\x19\x00\x00\x00\x02$month\x00\x08\x00\x00\x00$posted\x00\x00\x03week\x00\x18\x00\x00\x00\x02$week\x00\x08\x00\x00\x00$posted\x00\x00\x03year\x00\x18\x00\x00\x00\x02$year\x00\x08\x00\x00\x00$posted\x00\x00\x00\x00', }
+      aggRequestParsePipeline{ bson_sz: 30, bson: { "$sort" : { "_id" : 1.0 } }, }
+      aggRequestBatchSize{ batchSize: 0, }
+      aggRequestParse_end{ count: 20, }
+    ]
+   }
+   {
+   #probes: 5
+   count: 21
+    [
+      aggRequestParse_start{ count: 21, }
+      aggRequestParsePipeline{ bson_sz: 188, bson: b'!\x00\x00\x00\x03$sort\x00\x15\x00\x00\x00\x01author\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00uthor\x00\x00\x00\x00\x00\x00\x00\xf0?\x03pageViews\x00\x80\x00\x00\x00\x04$cond\x00t\x00\x00\x00\x030\x00*\x00\x00\x00\x04$eq\x00 \x00\x00\x00\x020\x00\x08\x00\x00\x00$author\x00\x021\x00\x05\x00\x00\x00dave\x00\x00\x00\x031\x00-\x00\x00\x00\x04$add\x00"\x00\x00\x00\x020\x00\x0b\x00\x00\x00$pageViews\x00\x011\x00\x00\x00\x00\x00\x00@\x8f@\x00\x00\x022\x00\x0b\x00\x00\x00$pageViews\x00\x00\x00\x00\x00', }
+      aggRequestParsePipeline{ bson_sz: 33, bson: { "$sort" : { "author" : 1.0 } }, }
+      aggRequestBatchSize{ batchSize: 0, }
+      aggRequestParse_end{ count: 21, }
+    ]
+   }
+   {
+   #probes: 4
+   count: 22
+    [
+      aggRequestParse_start{ count: 22, }
+      aggRequestParsePipeline{ bson_sz: 35, bson: { "$match" : { "author" : "dave" } }, }
+      aggRequestBatchSize{ batchSize: 0, }
+      aggRequestParse_end{ count: 22, }
+    ]
+   }
+   {
+   #probes: 7
+   count: 23
+    [
+      aggRequestParse_start{ count: 23, }
+      aggRequestParsePipeline{ bson_sz: 102, bson: b'\x1e\x00\x00\x00\x03$sort\x00\x12\x00\x00\x00\x01_id\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00y\x00\x00\x00author\x00\x00\x00\x00\x00\x00\x00\xf0?\x01pageViews\x00\x00\x00\x00\x00\x00\x00\xf0?\x01tags\x00\x00\x00\x00\x00\x00\x00\xf0?\x01comments\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00', }
+      aggRequestParsePipeline{ bson_sz: 24, bson: b'\x1e\x00\x00\x00\x03$sort\x00\x12\x00\x00\x00\x01_id\x00\x00\x00\x00\x00', }
+      aggRequestParsePipeline{ bson_sz: 34, bson: b'\x1e\x00\x00\x00\x03$sort\x00\x12\x00\x00\x00\x01_id\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00y\x00\x00\x00', }
+      aggRequestParsePipeline{ bson_sz: 30, bson: { "$sort" : { "_id" : 1.0 } }, }
+      aggRequestBatchSize{ batchSize: 0, }
+      aggRequestParse_end{ count: 23, }
+    ]
+   }
+   {
+   #probes: 7
+   count: 24
+    [
+      aggRequestParse_start{ count: 24, }
+      aggRequestParsePipeline{ bson_sz: 69, bson: b'\x1e\x00\x00\x00\x03$sort\x00\x12\x00\x00\x00\x01_id\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x03docsByTag\x00\x13\x00\x00\x00\x01$sum\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x03viewsBy', }
+      aggRequestParsePipeline{ bson_sz: 24, bson: b'\x1e\x00\x00\x00\x03$sort\x00\x12\x00\x00\x00\x01_id\x00\x00\x00\x00\x00', }
+      aggRequestParsePipeline{ bson_sz: 101, bson: b'\x1e\x00\x00\x00\x03$sort\x00\x12\x00\x00\x00\x01_id\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x03docsByTag\x00\x13\x00\x00\x00\x01$sum\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x03viewsByTag\x00\x1a\x00\x00\x00\x02$sum\x00\x0b\x00\x00\x00$pageViews\x00\x00\x00\x00', }
+      aggRequestParsePipeline{ bson_sz: 30, bson: { "$sort" : { "_id" : 1.0 } }, }
+      aggRequestBatchSize{ batchSize: 0, }
+      aggRequestParse_end{ count: 24, }
+    ]
+   }
+   {
+   #probes: 8
+   count: 25
+    [
+      aggRequestParse_start{ count: 25, }
+      aggRequestParsePipeline{ bson_sz: 69, bson: b'8\x00\x00\x00\x03$sort\x00,\x00\x00\x00\x01docsByTag\x00\x00\x00\x00\x00\x00\x00\xf0?\x01viewsByTag\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00ag\x00\x00\x00\x00\x00\x00\x00\xf0?\x01d', }
+      aggRequestParsePipeline{ bson_sz: 24, bson: b'8\x00\x00\x00\x03$sort\x00,\x00\x00\x00\x01docsByTa', }
+      aggRequestParsePipeline{ bson_sz: 154, bson: b'8\x00\x00\x00\x03$sort\x00,\x00\x00\x00\x01docsByTag\x00\x00\x00\x00\x00\x00\x00\xf0?\x01viewsByTag\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00ag\x00\x00\x00\x00\x00\x00\x00\xf0?\x01docsByTag\x00\x00\x00\x00\x00\x00\x00\xf0?\x01viewsByTag\x00\x00\x00\x00\x00\x00\x00\xf0?\x03avgByTag\x008\x00\x00\x00\x04$divide\x00*\x00\x00\x00\x020\x00\x0c\x00\x00\x00$viewsByTag\x00\x021', }
+      aggRequestParsePipeline{ bson_sz: 174, bson: b'8\x00\x00\x00\x03$sort\x00,\x00\x00\x00\x01docsByTag\x00\x00\x00\x00\x00\x00\x00\xf0?\x01viewsByTag\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00ag\x00\x00\x00\x00\x00\x00\x00\xf0?\x01docsByTag\x00\x00\x00\x00\x00\x00\x00\xf0?\x01viewsByTag\x00\x00\x00\x00\x00\x00\x00\xf0?\x03avgByTag\x008\x00\x00\x00\x04$divide\x00*\x00\x00\x00\x020\x00\x0c\x00\x00\x00$viewsByTag\x00\x021\x00\x0b\x00\x00\x00$docsByTag\x00\x00\x00\x00\x00', }
+      aggRequestParsePipeline{ bson_sz: 56, bson: b'\x1e\x00\x00\x00\x03$sort\x00\x12\x00\x00\x00\x01_id\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x06\x00\x00\x00$tags\x00\x00\x03authors\x00\x18\x00\x00\x00\x02', }
+      aggRequestBatchSize{ batchSize: 0, }
+      aggRequestParse_end{ count: 25, }
+    ]
+   }
+   {
+   #probes: 8
+   count: 26
+    [
+      aggRequestParse_start{ count: 26, }
+      aggRequestParsePipeline{ bson_sz: 50, bson: b'\x1e\x00\x00\x00\x03$sort\x00\x12\x00\x00\x00\x01_id\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x06\x00\x00\x00$tags\x00\x00\x03authors', }
+      aggRequestParsePipeline{ bson_sz: 24, bson: b'\x1e\x00\x00\x00\x03$sort\x00\x12\x00\x00\x00\x01_id\x00\x00\x00\x00\x00', }
+      aggRequestParsePipeline{ bson_sz: 33, bson: b'\x1e\x00\x00\x00\x03$sort\x00\x12\x00\x00\x00\x01_id\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x06\x00', }
+      aggRequestParsePipeline{ bson_sz: 77, bson: b'\x1e\x00\x00\x00\x03$sort\x00\x12\x00\x00\x00\x01_id\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x06\x00\x00\x00$tags\x00\x00\x03authors\x00\x18\x00\x00\x00\x02$push\x00\x08\x00\x00\x00$author\x00\x00\x00\x00', }
+      aggRequestParsePipeline{ bson_sz: 30, bson: { "$sort" : { "_id" : 1.0 } }, }
+      aggRequestBatchSize{ batchSize: 0, }
+      aggRequestParse_end{ count: 26, }
+    ]
+   }
+   {
+   #probes: 7
+   count: 27
+    [
+      aggRequestParse_start{ count: 27, }
+      aggRequestParsePipeline{ bson_sz: 69, bson: b'\x1e\x00\x00\x00\x03$sort\x00\x12\x00\x00\x00\x01_id\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x06\x00\x00\x00$tags\x00\x00\x03docsByTag\x00\x13\x00\x00\x00\x01$sum\x00\x00\x00\x00\x00\x00\x00', }
+      aggRequestParsePipeline{ bson_sz: 24, bson: b'\x1e\x00\x00\x00\x03$sort\x00\x12\x00\x00\x00\x01_id\x00\x00\x00\x00\x00', }
+      aggRequestParsePipeline{ bson_sz: 148, bson: b'\x1e\x00\x00\x00\x03$sort\x00\x12\x00\x00\x00\x01_id\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x06\x00\x00\x00$tags\x00\x00\x03authors\x00\x1c\x00\x00\x00\x02$addToSet\x00\x08\x00\x00\x00$author\x00\x00\x00\x00ag\x00\x1a\x00\x00\x00\x02$sum\x00\x0b\x00\x00\x00$pageViews\x00\x00\x03avgByTag\x00\x1a\x00\x00\x00\x02$avg\x00\x0b\x00\x00\x00$pageViews\x00\x00\x00\x00', }
+      aggRequestParsePipeline{ bson_sz: 30, bson: { "$sort" : { "_id" : 1.0 } }, }
+      aggRequestBatchSize{ batchSize: 0, }
+      aggRequestParse_end{ count: 27, }
+    ]
+   }
+   {
+   #probes: 7
+   count: 28
+    [
+      aggRequestParse_start{ count: 28, }
+      aggRequestParsePipeline{ bson_sz: 50, bson: b'\x1e\x00\x00\x00\x03$sort\x00\x12\x00\x00\x00\x01_id\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x06\x00\x00\x00$tags\x00\x00\x03authors', }
+      aggRequestParsePipeline{ bson_sz: 24, bson: b'\x1e\x00\x00\x00\x03$sort\x00\x12\x00\x00\x00\x01_id\x00\x00\x00\x00\x00', }
+      aggRequestParsePipeline{ bson_sz: 81, bson: b'\x1e\x00\x00\x00\x03$sort\x00\x12\x00\x00\x00\x01_id\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x06\x00\x00\x00$tags\x00\x00\x03authors\x00\x1c\x00\x00\x00\x02$addToSet\x00\x08\x00\x00\x00$author\x00\x00\x00\x00', }
+      aggRequestParsePipeline{ bson_sz: 30, bson: b'\x87\x00\x00\x00\x03$group\x00z\x00\x00\x00\x02_id\x00\x08\x00\x00\x00autho', }
+      aggRequestBatchSize{ batchSize: 0, }
+      aggRequestParse_end{ count: 28, }
+    ]
+   }
+   {
+   #probes: 5
+   count: 29
+    [
+      aggRequestParse_start{ count: 29, }
+      aggRequestParsePipeline{ bson_sz: 33, bson: b'\x87\x00\x00\x00\x03$group\x00z\x00\x00\x00\x02_id\x00\x08\x00\x00\x00authors\x00', }
+      aggRequestParsePipeline{ bson_sz: 135, bson: b'?\x00\x00\x00\x03$group\x002\x00\x00\x00\x02_id\x00\n\x00\x00\x00tag_count\x00\x03count\x00\x13\x00\x00\x00\x01$sum\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00uthor\x00\x00\x03lastAuthor\x00\x19\x00\x00\x00\x02$first\x00\x08\x00\x00\x00$author\x00\x00\x03count\x00\x13\x00\x00\x00\x01$sum\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00', }
+      aggRequestBatchSize{ batchSize: 0, }
+      aggRequestParse_end{ count: 29, }
+    ]
+   }
+   {
+   #probes: 5
+   count: 30
+    [
+      aggRequestParse_start{ count: 30, }
+      aggRequestParsePipeline{ bson_sz: 24, bson: b'?\x00\x00\x00\x03$group\x002\x00\x00\x00\x02_id\x00\n\x00\x00', }
+      aggRequestParsePipeline{ bson_sz: 63, bson: { "$group" : { "_id" : "tag_count", "count" : { "$sum" : 1.0 } } }, }
+      aggRequestBatchSize{ batchSize: 0, }
+      aggRequestParse_end{ count: 30, }
+    ]
+   }
+ ]
+}

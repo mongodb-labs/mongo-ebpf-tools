@@ -187,7 +187,7 @@ LONGSTR_LOOP_INIT = """
 LONGSTR_LOOP_READ = """
 \tchunk = {longstr_buf_name}.lookup(&index);
 \tif (chunk == NULL) return BAD_CHUNK_IDX;
-\tindex++;
+\tindex = (index + 1) % MAX_MAP_SZ;
 
 \tif (len < 0) {{
 \t\treturn LOGICAL_ERROR;
