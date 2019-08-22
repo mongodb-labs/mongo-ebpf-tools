@@ -13,20 +13,30 @@ class WorkerThread(Thread):
         self.should_work = True
         self._do_work = target
         self._delay = delay
+        self.cause_of_death = None
         self.on_die = on_die
         Thread.__init__(self, target=self._job)
 
     def _job(self):
-        while self.should_work:
-            if self._delay > 0:
-                sleep(self._delay)
-            self._do_work()
-        if self.on_die: self.on_die()
-        exit(0)
+        try:
+            while self.should_work:
+                if self._delay > 0:
+                    sleep(self._delay)
+                self._do_work()
+        except Exception as e:
+            self.cause_of_death = e
+        finally:
+            if self.on_die:
+                try:
+                    self.on_die()
+                except:
+                    pass
+            exit(0)
 
 class WorkerMaster:
     def __init__(self, workers):
         self._workers = workers
+        self.reports = []
 
     def start_all(self):
         for worker in self._workers:
@@ -36,6 +46,13 @@ class WorkerMaster:
         for worker in self._workers:
             worker.should_work = False
             worker.join()
+            if worker.cause_of_death != None:
+                self.reports.append(worker.cause_of_death)
+
+    def dumps(self):
+        for report in self.reports:
+            print("THREAD DIED BY EXCEPTION:")
+            print(report)
 
 class Counter:
     """Tracks the proportion of values recieved for a property, like a pie chart."""

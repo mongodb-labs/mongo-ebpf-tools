@@ -37,8 +37,9 @@ class Commands:
             "exit": self.quit,
             "h": self.print_help,
             "help": self.print_help,
-            "p": self.pct,
-            "pct": self.pct,
+            # BROKEN: TODO: fix
+            #"p": self.pct,
+            #"pct": self.pct,
             "t": self.tiger,
             "tiger": self.tiger,
             "q": self.quit,
@@ -47,6 +48,22 @@ class Commands:
 
     def format_output(self, string, color = curses.COLOR_WHITE):
         format_output(self._stdscr, string, color)
+
+    # Utility to clean up after a thread and start a new one #
+    def _thread(self, worker):
+        self.close()
+        self.workerThread = worker
+        self.workerThread.start()
+
+    # Clean up after each thread/ on program termination #
+    def close(self):
+        if self.workerThread != None:
+            self.workerThread.should_work = False
+            format_output(self._result_win, "Joining worker...\n")
+            self.workerThread.join()
+            self._stdscr.erase()
+
+    # Commands #
 
     def echo(self, tokens):
         self.format_output(" ".join(tokens[1:]))
@@ -63,18 +80,7 @@ class Commands:
     def quit(self, tokens):
         raise KeyboardInterrupt
 
-    def _thread(self, worker):
-        self.close()
-        self.workerThread = worker
-        self.workerThread.start()
-
-    def close(self):
-        if self.workerThread != None:
-            self.workerThread.should_work = False
-            format_output(self._result_win, "Joining worker...\n")
-            self.workerThread.join()
-            self._stdscr.erase()
-
+    # Print stats about a probe #
     def pct(self, tokens):
         if len(tokens) < 2:
             self.print_error("Need at least one probe to sample.")
@@ -92,6 +98,7 @@ class Commands:
 
         self._thread(WorkerThread(pct_work, 1))
 
+    # Run the Wiredtiger tool #
     def tiger(self, tokens):
         del tokens
         format_output(self._result_win, "Initializing WiredTiger tool...\n")
@@ -115,6 +122,8 @@ class Commands:
         self.ptr = self.ptr + 1
         format_output(self._result_win, command, curses.COLOR_GREEN if valid else curses.COLOR_RED)
 
+    # Up arrow key to fetch previous command #
+
     def prev(self):
         if len(self.history) == 0:
             return ""
@@ -122,6 +131,8 @@ class Commands:
         if self.ptr < 0:
             self.ptr = len(self.history) - 1
         return self.history[self.ptr]
+
+    # Down arrow key to fetch next one #
 
     def next(self):
         if self.ptr == len(self.history):

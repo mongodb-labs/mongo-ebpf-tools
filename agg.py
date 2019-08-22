@@ -4,65 +4,17 @@ import argparse
 import bson.raw_bson as raw_bson
 
 from bsonjs import dumps
-from generator.err import errors, error_strings
-from generator.consts import *
-from generator.generator import Probe
-from probes import ProbeHit, ProbeHistory, TimeTable, USDTThread, USDTArg
 from signal import signal, SIGINT
 from threading import Event, Lock
+
+from bundle import Bundle
+from generator.err import errors, error_strings 
+from generator.consts import * 
+from generator.generator import Probe 
+from probes import ProbeHit, ProbeHistory, TimeTable, USDTThread, USDTArg 
 from util import WorkerMaster, WorkerThread, Counter
 
 ####################################################################################
-
-class Bundle:
-    def __init__(self, start = None):
-        # TODO: start/end timers?
-        self._probes = [start]
-        self._done = False
-        if start:
-            self.tid = start.tid
-            self.name = start.name.replace("_start", "")
-            self.count = start.args["count"]
-        else:
-            self.tid = None
-            self.name = None
-            self.count = None
-    
-    def start(self):
-        return self._probes[0] 
-
-    def is_start(probe):
-        return probe.name.endswith("_start")
-
-    def is_end(self, probe):
-        return probe.name.endswith("_end") \
-            and probe.args["count"] == self.count
-
-    def has_open_nested_probe(self):
-        return isinstance(self._probes[-1], Bundle) and not self._probes[-1]._done
-
-    def push(self, probe):
-        if self.has_open_nested_probe():
-            self._probes[-1].push(probe)
-        elif self.is_end(probe):
-            self._done = True
-            self._probes.append(probe)
-        elif Bundle.is_start(probe):
-            self._probes.append(Bundle(probe))
-        else:
-            self._probes.append(probe)
-
-    def __str__(self):
-        out = "{\n"
-        out += "#probes: {}\n".format(len(self._probes))
-        #out += "tid: {}\n".format(self.tid)
-        out += "count: {}\n".format(self.count)
-        out += " [\n"
-        for probe in self._probes:
-            probestr = str(probe)
-            for line in probestr.splitlines():
-                out += "   " + line + "\n"
-        return out + " ]\n}\n"
 
 class AggTimeTable(TimeTable):
     def __init__(self, view, probes, file_name):
@@ -143,13 +95,11 @@ class AggTimeTable(TimeTable):
         else:
             print(out)
 
-####################################################################################
-
 def sigint_handler_gen(mr, tt):
     def handler(signal, frame):
         mr.kill_all()
-        print("---------------- SORTED -------------------")
         tt.dumps()
+        mr.dumps()
         exit(0)
     return handler
 
@@ -167,7 +117,8 @@ def mk_USDTThread_from(probe_name, probe_args, args, time_table):
 # Main #
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Gather data from aggregation requests.")
+    parser = argparse.ArgumentParser(description="Gather data from aggregation requests." \
+        + "On CTRL+C, print out data collected from probes grouped to correspond to their source aggregation requests.")
     parser.add_argument('pid',
                         metavar='pid',
                         type=int,
@@ -196,7 +147,7 @@ if __name__ == '__main__':
                         type=str,
                         nargs='?',
                         default=None,
-                        help='output file for bundle')
+                        help='output file')
 
     args = parser.parse_args()
     print(args)

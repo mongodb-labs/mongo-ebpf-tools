@@ -256,7 +256,9 @@ class USDTThread(WorkerThread):
         for probe in self._probes:
             self._generator.add_probe(probe)
         self.bpf_code = self._generator.finish()
-        print(self.bpf_code)
+        # uncomment this to print out generated EBPF-C code
+        # NOTE: will break curses UI, so don't use with threads.py
+        # print(self.bpf_code)
 
     def _init_bpf(self):
         self.gen_code()

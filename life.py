@@ -8,6 +8,9 @@ from threading import Lock
 from time import sleep
 from util import WorkerMaster, WorkerThread
 
+# This file is a prototype for reading out long strings. A more robust way to read long strings 
+# is currently integrated into the generator.
+
 pct = 1
 SAMPLES_THRESH = int(pct*(2**32))
 # can transfer ~ 134 MB
@@ -130,12 +133,15 @@ if __name__ == '__main__':
     args = parser.parse_args()
     bpfs = dict()
 
+    # These probes do not currently exist on any branch, and were used solely for my own testing.
+    # You can use any probes that pass through a BSONObj size and a BSONObj char* in that order.
+    probes = []#["query1", "query", "query1", "query1R", "queryR", "query2", "query3"]
+
     # necessary to have multiple bpfs, one for each object,
     # due to restriction on number of insns per bpf object.
     # copying out long strings requires a large number of insns,
     # and duplicating that for each entrypt function is prohibitively
     # large in terms of number of isns.
-    probes = ["query1", "query", "query1", "query1R", "queryR", "query2", "query3"]
     for probe in probes:
         print(probe)
         usdt = USDT(pid=args.pid[0])

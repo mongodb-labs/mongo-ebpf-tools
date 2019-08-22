@@ -131,9 +131,8 @@ if __name__ == '__main__':
     time_table = QueryTimeTable(None)
 
     workers = []
-    for probe_name in ["AggRequestParsePipeline"]:#["queryRequestFilter", "queryRequestProj", "queryRequestSort", "queryRequestHint",
-                      # "queryRequestReadConcern", "queryRequestCollation", "queryRequestUnwrappedReadPref",
-                      # ["AggRequestParsePipeline"]:
+    for probe_name in ["queryRequestFilter", "queryRequestProj", "queryRequestSort", "queryRequestHint",
+                       "queryRequestReadConcern", "queryRequestCollation", "queryRequestUnwrappedReadPref"]:
         worker = USDTThread(args.pid[0], [ptr_and_bson_probe(probe_name, args.sample, args.chunk, args.map)], time_table)
         workers.append(worker)
 
