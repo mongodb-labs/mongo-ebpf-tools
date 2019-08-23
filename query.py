@@ -99,7 +99,7 @@ def ptr_and_bson_probe(name, samples, chunk_sz, map_sz):
 # Main #
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Gather timing data from WiredTiger.")
+    parser = argparse.ArgumentParser(description="Gather data from QueryRequests.")
     parser.add_argument('pid',
                         metavar='pid',
                         type=int,
